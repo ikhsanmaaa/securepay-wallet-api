@@ -1,10 +1,10 @@
 package com.ikhsan.securepaywallet.transaction;
 
 import java.math.BigDecimal;
-import java.util.Set;
 import java.util.UUID;
 
-import com.ikhsan.securepaywallet.common.BaseEntity;
+import com.ikhsan.securepaywallet.common.baseclass.BaseEntity;
+import com.ikhsan.securepaywallet.enumerate.TransactionStatus;
 import com.ikhsan.securepaywallet.enumerate.TransactionType;
 import com.ikhsan.securepaywallet.wallet.WalletEntity;
 
@@ -30,27 +30,35 @@ import lombok.Setter;
 public class TransactionEntity extends BaseEntity {
 
     @Id
-    @Column
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne()
+    @ManyToOne
     @JoinColumn(name = "sender_wallet_id")
-    private WalletEntity sender_wallet_id;
+    private WalletEntity senderWallet;
 
-    @ManyToOne()
+    @ManyToOne
     @JoinColumn(name = "receiver_wallet_id")
-    private WalletEntity receiver_wallet_id;
+    private WalletEntity receiverWallet;
 
-    private Integer reference_number;
+    @Column(name = "reference_number", nullable = false, unique = true, length = 50)
+    private String referenceNumber;
 
     @Enumerated(EnumType.STRING)
-    private Set<TransactionType> type;
+    @Column(nullable = false)
+    private TransactionType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TransactionStatus status;
+
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal fee;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
 }

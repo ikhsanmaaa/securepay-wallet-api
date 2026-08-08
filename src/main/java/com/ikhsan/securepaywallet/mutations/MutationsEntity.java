@@ -15,8 +15,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,23 +32,25 @@ public class MutationsEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @OneToMany(mappedBy = "id")
-    private WalletEntity wallet_id;
+    @ManyToOne
+    @JoinColumn(name = "wallet_id", nullable = false)
+    private WalletEntity wallet;
 
-    @OneToOne
-    @JoinColumn(name = "id")
-    private TransactionEntity transaction_id;
+    @ManyToOne
+    @JoinColumn(name = "transaction_id", nullable = false)
+    private TransactionEntity transaction;
+
+    @Column(name = "balance_before", nullable = false)
+    private BigDecimal balanceBefore;
+
+    @Column(name = "balance_after", nullable = false)
+    private BigDecimal balanceAfter;
 
     @Column(nullable = false)
-    private BigDecimal balance_before;
-
-    @Column(nullable = false)
-    private BigDecimal balance_after;
-
     private BigDecimal amount;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     @CreatedDate
-    protected Instant createdAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
 }

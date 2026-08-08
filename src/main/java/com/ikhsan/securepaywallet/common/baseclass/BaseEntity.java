@@ -1,4 +1,4 @@
-package com.ikhsan.securepaywallet.common;
+package com.ikhsan.securepaywallet.common.baseclass;
 
 import java.time.Instant;
 
