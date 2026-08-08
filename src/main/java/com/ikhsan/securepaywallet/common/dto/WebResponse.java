@@ -1,4 +1,4 @@
-package com.ikhsan.securepaywallet.common;
+package com.ikhsan.securepaywallet.common.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

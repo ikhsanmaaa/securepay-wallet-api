@@ -1,9 +1,9 @@
 package com.ikhsan.securepaywallet.wallet;
 
-import java.util.Set;
+import java.math.BigDecimal;
 import java.util.UUID;
 
-import com.ikhsan.securepaywallet.common.BaseEntity;
+import com.ikhsan.securepaywallet.common.baseclass.BaseEntity;
 import com.ikhsan.securepaywallet.enumerate.WalletStatus;
 import com.ikhsan.securepaywallet.user.UserEntity;
 
@@ -15,7 +15,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,16 +29,17 @@ import lombok.Setter;
 public class WalletEntity extends BaseEntity {
 
     @Id
-    @Column(nullable = false)
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "id", nullable = false)
-    private UserEntity user_id;
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private UserEntity user;
 
-    private Integer balance;
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal balance;
 
     @Enumerated(EnumType.STRING)
-    private Set<WalletStatus> status;
+    @Column(nullable = false)
+    private WalletStatus status;
 }
