@@ -11,7 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-public class UserResponseDto {
+public class UserResponse {
 
     private String username;
 

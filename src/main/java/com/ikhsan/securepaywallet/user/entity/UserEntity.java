@@ -3,10 +3,13 @@ package com.ikhsan.securepaywallet.user.entity;
 import java.util.UUID;
 
 import com.ikhsan.securepaywallet.common.baseclass.BaseEntity;
+import com.ikhsan.securepaywallet.enumerate.Role;
 import com.ikhsan.securepaywallet.wallet.WalletEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -41,8 +44,9 @@ public class UserEntity extends BaseEntity {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role;
+    private Role role;
 
     @OneToOne(mappedBy = "user")
     private WalletEntity wallet;

@@ -1,4 +1,4 @@
-package com.ikhsan.securepaywallet.auth.dto;
+package com.ikhsan.securepaywallet.auth.dto.res;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,7 +14,5 @@ import lombok.Setter;
 public class TokenResponse {
 
     private String token;
-
-    private Long expired_at;
 
 }

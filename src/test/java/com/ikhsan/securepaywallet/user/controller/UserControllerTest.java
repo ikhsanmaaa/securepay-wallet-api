@@ -8,66 +8,35 @@ import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
 
 import com.ikhsan.securepaywallet.common.dto.WebResponse;
-import com.ikhsan.securepaywallet.user.dto.req.RegisterRequestDto;
-import com.ikhsan.securepaywallet.user.dto.res.UserResponseDto;
-import com.ikhsan.securepaywallet.user.entity.UserEntity;
-import com.ikhsan.securepaywallet.user.service.UserService;
 
-@ExtendWith(MockitoExtension.class)
 class UserControllerTest {
 
-    @Mock
-    private UserService userService;
-
-    @InjectMocks
     private UserController userController;
-
-    private UserEntity user;
-    private RegisterRequestDto registerRequest;
 
     @BeforeEach
     void setUp() {
-        user = new UserEntity();
-        registerRequest = new RegisterRequestDto();
+        userController = new UserController(null);
     }
 
     @Test
-    void getUser_shouldReturnUserResponse() {
-        // Arrange
-        UserResponseDto userResponse = mock(UserResponseDto.class);
+    void getUserDummy_shouldReturnAuthenticatedUserName() {
 
-        when(userService.getUser(user))
-                .thenReturn(userResponse);
+        // Arrange
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getName())
+                .thenReturn("123");
 
         // Act
-        WebResponse<UserResponseDto> response = userController.getUser(user);
+        WebResponse<String> response = userController.getUserDummy(authentication);
 
         // Assert
         assertNotNull(response);
-        assertEquals(userResponse, response.getData());
+        assertEquals("123", response.getData());
 
-        verify(userService).getUser(user);
-    }
-
-    @Test
-    void register_shouldCallUserServiceAndReturnOk() {
-        // Arrange
-        // userService.register() adalah void,
-        // jadi tidak perlu when()
-
-        // Act
-        WebResponse<String> response = userController.register(registerRequest);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals("ok", response.getData());
-
-        verify(userService).register(registerRequest);
+        verify(authentication).getName();
     }
 }

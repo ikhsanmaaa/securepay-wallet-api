@@ -1,4 +1,4 @@
-package com.ikhsan.securepaywallet.auth.dto;
+package com.ikhsan.securepaywallet.auth.dto.req;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
