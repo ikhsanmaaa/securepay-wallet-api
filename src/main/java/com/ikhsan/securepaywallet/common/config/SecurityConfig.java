@@ -10,6 +10,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.ikhsan.securepaywallet.auth.security.JwtAuthenticationFilter;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -33,6 +35,13 @@ public class SecurityConfig {
                                                                 "/v3/api-docs/**")
                                                 .permitAll()
                                                 .anyRequest().authenticated())
+
+                                .exceptionHandling(exception -> exception
+                                                .authenticationEntryPoint(
+                                                                (request, response, authException) -> {
+                                                                        response.setStatus(
+                                                                                        HttpServletResponse.SC_UNAUTHORIZED);
+                                                                }))
 
                                 .addFilterBefore(jwtAuthenticatorFilter, UsernamePasswordAuthenticationFilter.class)
 

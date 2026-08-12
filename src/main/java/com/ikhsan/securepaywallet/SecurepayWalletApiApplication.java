@@ -1,9 +1,13 @@
 package com.ikhsan.securepaywallet;
 
+import javax.crypto.SecretKey;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+@Profile("!test")
 @SpringBootApplication
 @EnableJpaAuditing
 public class SecurepayWalletApiApplication {
