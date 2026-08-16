@@ -1,5 +1,8 @@
 package com.ikhsan.securepaywallet.user.service;
 
+import java.util.UUID;
+
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.ikhsan.securepaywallet.common.service.ValidateService;
@@ -16,8 +19,18 @@ public class UserService implements IUser {
         this.userRepository = userRepository;
     }
 
-    public UserResponse getUser(UserEntity user) {
-        return UserResponse.builder().username(user.getUsername()).email(user.getEmail())
-                .phoneNumber(user.getPhoneNumber()).build();
+    public UserResponse getUserById(UUID userId) {
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber())
+                .role(user.getRole().name())
+                .build();
+
     }
 }

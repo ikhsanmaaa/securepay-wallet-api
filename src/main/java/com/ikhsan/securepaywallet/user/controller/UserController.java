@@ -1,6 +1,9 @@
 package com.ikhsan.securepaywallet.user.controller;
 
+import java.util.UUID;
+
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,17 +27,22 @@ public class UserController {
         this.userService = userService;
     }
 
-    // @Operation(summary = "Get current user", description = "Returns user
-    // information")
-    // @GetMapping(path = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
-    // public WebResponse<UserResponse> getUser(UserEntity user) {
-    // UserResponse userResponse = userService.getUser(user);
-    // return WebResponse.<UserResponse>builder().data(userResponse).build();
-    // }
     @Operation(summary = "Get current user", description = "Returns user information")
     @GetMapping(path = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
-    public WebResponse<String> getUserDummy(Authentication authentication) {
+    public WebResponse<UserResponse> getCurrentUser(Authentication authentication) {
 
-        return WebResponse.<String>builder().data(authentication.getName()).build();
+        UUID userId = (UUID) authentication.getPrincipal();
+
+        UserResponse userResponse = userService.getUserById(userId);
+        return WebResponse.<UserResponse>builder().data(userResponse).build();
+    }
+
+    @GetMapping("/admin-test")
+    @PreAuthorize("hasRole('ADMIN')")
+    public WebResponse<String> adminTest() {
+
+        return WebResponse.<String>builder()
+                .data("admin access")
+                .build();
     }
 }

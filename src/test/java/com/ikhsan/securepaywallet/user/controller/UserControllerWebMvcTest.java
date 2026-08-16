@@ -66,4 +66,40 @@ class UserControllerWebMvcTest {
                                                 .header("Authorization", "Bearer " + token))
                                 .andExpect(status().isOk());
         }
+
+        @Test
+        void adminEndpoint_shouldReturnForbidden_whenUserIsNotAdmin()
+                        throws Exception {
+
+                UUID userId = UUID.randomUUID();
+
+                String token = jwtService.generateAccessToken(
+                                userId,
+                                "USER");
+
+                mockMvc.perform(
+                                get("/api/users/admin-test")
+                                                .header(
+                                                                "Authorization",
+                                                                "Bearer " + token))
+                                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void adminEndpoint_shouldReturnOk_whenUserIsAdmin()
+                        throws Exception {
+
+                UUID userId = UUID.randomUUID();
+
+                String token = jwtService.generateAccessToken(
+                                userId,
+                                "ADMIN");
+
+                mockMvc.perform(
+                                get("/api/users/admin-test")
+                                                .header(
+                                                                "Authorization",
+                                                                "Bearer " + token))
+                                .andExpect(status().isOk());
+        }
 }
