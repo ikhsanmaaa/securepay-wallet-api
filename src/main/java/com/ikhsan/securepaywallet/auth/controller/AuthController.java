@@ -1,12 +1,16 @@
 package com.ikhsan.securepaywallet.auth.controller;
 
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ikhsan.securepaywallet.auth.dto.req.ChangePasswordRequest;
 import com.ikhsan.securepaywallet.auth.dto.req.LoginRequest;
 import com.ikhsan.securepaywallet.auth.dto.req.RegisterUserRequest;
 import com.ikhsan.securepaywallet.auth.dto.res.TokenResponse;
@@ -42,9 +46,19 @@ public class AuthController {
         return WebResponse.<TokenResponse>builder().data(tokenResponse).build();
     }
 
-    // @DeleteMapping(path = "/logout")
-    // public WebResponse<String> logout(UserEntity user) {
-    // authService.logout(user);
-    // return WebResponse.<String>builder().data("ok").build();
-    // }
+    @PostMapping(path = "/logout")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void logout(Authentication authentication) {
+
+        UUID sessionId = (UUID) authentication.getDetails();
+
+        authService.logout(sessionId);
+    }
+
+    @PostMapping(path = "/change-password")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void changePassword(String username, ChangePasswordRequest request) {
+
+        authService.changePassword(username, request);
+    }
 }

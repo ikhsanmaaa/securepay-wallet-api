@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ikhsan.securepaywallet.auth.session.annotation.SessionActivity;
 import com.ikhsan.securepaywallet.common.dto.WebResponse;
 import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
-import com.ikhsan.securepaywallet.user.entity.UserEntity;
 import com.ikhsan.securepaywallet.user.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +27,7 @@ public class UserController {
         this.userService = userService;
     }
 
+    @SessionActivity
     @Operation(summary = "Get current user", description = "Returns user information")
     @GetMapping(path = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
     public WebResponse<UserResponse> getCurrentUser(Authentication authentication) {

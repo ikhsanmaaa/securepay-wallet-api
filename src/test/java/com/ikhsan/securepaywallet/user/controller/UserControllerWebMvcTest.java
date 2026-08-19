@@ -2,8 +2,12 @@ package com.ikhsan.securepaywallet.user.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.ikhsan.securepaywallet.auth.security.JwtAuthenticationFilter;
 import com.ikhsan.securepaywallet.auth.security.JwtService;
+import com.ikhsan.securepaywallet.auth.session.service.SessionService;
 import com.ikhsan.securepaywallet.common.config.SecurityConfig;
 import com.ikhsan.securepaywallet.user.service.UserService;
 
@@ -28,10 +33,16 @@ import com.ikhsan.securepaywallet.user.service.UserService;
                 JwtService.class
 })
 @TestPropertySource(properties = {
-                "hwDe+1mWsxCXpK48PDrwlXCF2ioFhbSpmxcmWTvZbR0=",
+                "jwt.secret=hwDe+1mWsxCXpK48PDrwlXCF2ioFhbSpmxcmWTvZbR0=",
                 "jwt.access-token-expiration=900000"
 })
 class UserControllerWebMvcTest {
+
+        @MockitoBean
+        private SessionService sessionService;
+
+        @MockitoBean
+        private UserService userService;
 
         @Autowired
         private MockMvc mockMvc;
@@ -39,31 +50,36 @@ class UserControllerWebMvcTest {
         @Autowired
         private JwtService jwtService;
 
-        @MockitoBean
-        private UserService userService;
-
         @Test
         void getUser_shouldReturnUnauthorizedWithoutToken()
                         throws Exception {
 
                 mockMvc.perform(
-                                get("/api/users/me"))
-                                .andExpect(status().isUnauthorized());
+                                get("/api/users/me")).andExpect(status().isUnauthorized());
         }
 
         @Test
         void getUser_shouldReturnUserId_whenTokenIsValid()
                         throws Exception {
 
+                // Arrange
                 UUID userId = UUID.randomUUID();
+                UUID sessionId = UUID.randomUUID();
 
                 String token = jwtService.generateAccessToken(
                                 userId,
-                                "USER");
+                                "USER",
+                                sessionId);
 
+                when(sessionService.isSessionValid(sessionId))
+                                .thenReturn(true);
+
+                // Act & Assert
                 mockMvc.perform(
                                 get("/api/users/me")
-                                                .header("Authorization", "Bearer " + token))
+                                                .header(
+                                                                "Authorization",
+                                                                "Bearer " + token))
                                 .andExpect(status().isOk());
         }
 
@@ -71,12 +87,19 @@ class UserControllerWebMvcTest {
         void adminEndpoint_shouldReturnForbidden_whenUserIsNotAdmin()
                         throws Exception {
 
+                // Arrange
                 UUID userId = UUID.randomUUID();
+                UUID sessionId = UUID.randomUUID();
 
                 String token = jwtService.generateAccessToken(
                                 userId,
-                                "USER");
+                                "USER",
+                                sessionId);
 
+                when(sessionService.isSessionValid(sessionId))
+                                .thenReturn(true);
+
+                // Act & Assert
                 mockMvc.perform(
                                 get("/api/users/admin-test")
                                                 .header(
@@ -89,12 +112,19 @@ class UserControllerWebMvcTest {
         void adminEndpoint_shouldReturnOk_whenUserIsAdmin()
                         throws Exception {
 
+                // Arrange
                 UUID userId = UUID.randomUUID();
+                UUID sessionId = UUID.randomUUID();
 
                 String token = jwtService.generateAccessToken(
                                 userId,
-                                "ADMIN");
+                                "ADMIN",
+                                sessionId);
 
+                when(sessionService.isSessionValid(sessionId))
+                                .thenReturn(true);
+
+                // Act & Assert
                 mockMvc.perform(
                                 get("/api/users/admin-test")
                                                 .header(
@@ -102,4 +132,71 @@ class UserControllerWebMvcTest {
                                                                 "Bearer " + token))
                                 .andExpect(status().isOk());
         }
+
+        @Test
+        void getUser_shouldReturnUnauthorized_whenSessionIsInvalid()
+                        throws Exception {
+
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                UUID sessionId = UUID.randomUUID();
+
+                String token = jwtService.generateAccessToken(
+                                userId,
+                                "USER",
+                                sessionId);
+
+                when(sessionService.isSessionValid(sessionId))
+                                .thenReturn(false);
+
+                // Act & Assert
+                mockMvc.perform(
+                                get("/api/users/me")
+                                                .header(
+                                                                "Authorization",
+                                                                "Bearer " + token))
+                                .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void getUser_shouldReturnUnauthorized_afterSessionIsRevoked()
+                        throws Exception {
+
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                UUID sessionId = UUID.randomUUID();
+
+                String token = jwtService.generateAccessToken(
+                                userId,
+                                "USER",
+                                sessionId);
+
+                AtomicBoolean sessionValid = new AtomicBoolean(true);
+
+                when(sessionService.isSessionValid(sessionId))
+                                .thenAnswer(invocation -> sessionValid.get());
+
+                // First request: session masih aktif
+                mockMvc.perform(
+                                get("/api/users/me")
+                                                .header(
+                                                                "Authorization",
+                                                                "Bearer " + token))
+                                .andExpect(status().isOk());
+
+                // Simulasikan logout/revoke
+                sessionValid.set(false);
+
+                // Second request: JWT sama, tetapi session sudah revoked
+                mockMvc.perform(
+                                get("/api/users/me")
+                                                .header(
+                                                                "Authorization",
+                                                                "Bearer " + token))
+                                .andExpect(status().isUnauthorized());
+
+                verify(sessionService, times(2))
+                                .isSessionValid(sessionId);
+        }
+
 }

@@ -20,238 +20,322 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.ikhsan.securepaywallet.auth.session.service.SessionService;
+
 class JwtAuthenticationFilterTest {
 
-    private JwtService jwtService;
-    private JwtAuthenticationFilter filter;
-    private FilterChain filterChain;
+        private JwtService jwtService;
+        private JwtAuthenticationFilter filter;
+        private FilterChain filterChain;
+        private SessionService sessionService;
 
-    @BeforeEach
-    void setUp() {
-        jwtService = mock(JwtService.class);
-        filter = new JwtAuthenticationFilter(jwtService);
-        filterChain = mock(FilterChain.class);
+        @BeforeEach
+        void setUp() {
+                jwtService = mock(JwtService.class);
+                sessionService = mock(SessionService.class);
+                filter = new JwtAuthenticationFilter(
+                                jwtService,
+                                sessionService);
+                filterChain = mock(FilterChain.class);
 
-        SecurityContextHolder.clearContext();
-    }
+                SecurityContextHolder.clearContext();
+        }
 
-    @Test
-    void doFilterInternal_shouldSetAuthentication_whenTokenIsValid()
-            throws ServletException, IOException {
+        @Test
+        void doFilterInternal_shouldSetAuthentication_whenTokenIsValid()
+                        throws ServletException, IOException {
 
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        String role = "USER";
-        String token = "valid-token";
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                UUID sessionId = UUID.randomUUID();
 
-        when(jwtService.isValid(token))
-                .thenReturn(true);
+                String role = "USER";
+                String token = "valid-token";
 
-        when(jwtService.extractSubject(token))
-                .thenReturn(userId.toString());
+                when(jwtService.isValid(token))
+                                .thenReturn(true);
 
-        when(jwtService.extractRole(token))
-                .thenReturn(role);
+                when(sessionService.isSessionValid(sessionId))
+                                .thenReturn(true);
 
-        MockHttpServletRequest request = new MockHttpServletRequest();
+                when(jwtService.extractSubject(token))
+                                .thenReturn(userId.toString());
 
-        request.addHeader(
-                "Authorization",
-                "Bearer " + token);
+                when(jwtService.extractRole(token))
+                                .thenReturn(role);
 
-        MockHttpServletResponse response = new MockHttpServletResponse();
+                when(jwtService.extractSessionId(token))
+                                .thenReturn(sessionId.toString());
 
-        // Act
-        filter.doFilterInternal(
-                request,
-                response,
-                filterChain);
+                MockHttpServletRequest request = new MockHttpServletRequest();
 
-        // Assert
-        Authentication authentication = SecurityContextHolder
-                .getContext()
-                .getAuthentication();
+                request.addHeader(
+                                "Authorization",
+                                "Bearer " + token);
 
-        assertNotNull(authentication);
+                MockHttpServletResponse response = new MockHttpServletResponse();
 
-        assertEquals(
-                userId,
-                authentication.getPrincipal());
+                // Act
+                filter.doFilterInternal(
+                                request,
+                                response,
+                                filterChain);
 
-        assertEquals(
-                "ROLE_USER",
-                authentication
-                        .getAuthorities()
-                        .iterator()
-                        .next()
-                        .getAuthority());
+                // Assert
+                Authentication authentication = SecurityContextHolder
+                                .getContext()
+                                .getAuthentication();
 
-        verify(filterChain).doFilter(
-                request,
-                response);
-    }
+                assertNotNull(authentication);
 
-    @Test
-    void doFilterInternal_shouldNotAuthenticate_whenAuthorizationHeaderMissing()
-            throws ServletException, IOException {
+                assertEquals(
+                                userId,
+                                authentication.getPrincipal());
 
-        // Arrange
-        MockHttpServletRequest request = new MockHttpServletRequest();
+                assertEquals(
+                                sessionId,
+                                authentication.getDetails());
 
-        MockHttpServletResponse response = new MockHttpServletResponse();
+                assertEquals(
+                                "ROLE_USER",
+                                authentication
+                                                .getAuthorities()
+                                                .iterator()
+                                                .next()
+                                                .getAuthority());
 
-        // Act
-        filter.doFilter(
-                request,
-                response,
-                filterChain);
+                verify(filterChain).doFilter(
+                                request,
+                                response);
+        }
 
-        // Assert
-        assertNull(
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication());
+        @Test
+        void doFilterInternal_shouldNotAuthenticate_whenAuthorizationHeaderMissing()
+                        throws ServletException, IOException {
 
-        verify(filterChain).doFilter(
-                request,
-                response);
+                // Arrange
+                MockHttpServletRequest request = new MockHttpServletRequest();
 
-        verifyNoInteractions(jwtService);
-    }
+                MockHttpServletResponse response = new MockHttpServletResponse();
 
-    @Test
-    void doFilterInternal_shouldNotAuthenticate_whenAuthorizationIsNotBearer()
-            throws ServletException, IOException {
+                // Act
+                filter.doFilter(
+                                request,
+                                response,
+                                filterChain);
 
-        // Arrange
-        MockHttpServletRequest request = new MockHttpServletRequest();
+                // Assert
+                assertNull(
+                                SecurityContextHolder
+                                                .getContext()
+                                                .getAuthentication());
 
-        request.addHeader(
-                "Authorization",
-                "Basic abc123");
+                verify(filterChain).doFilter(
+                                request,
+                                response);
 
-        MockHttpServletResponse response = new MockHttpServletResponse();
+                verifyNoInteractions(jwtService);
+        }
 
-        // Act
-        filter.doFilter(
-                request,
-                response,
-                filterChain);
+        @Test
+        void doFilterInternal_shouldNotAuthenticate_whenAuthorizationIsNotBearer()
+                        throws ServletException, IOException {
 
-        // Assert
-        assertNull(
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication());
+                // Arrange
+                MockHttpServletRequest request = new MockHttpServletRequest();
 
-        verify(filterChain).doFilter(
-                request,
-                response);
+                request.addHeader(
+                                "Authorization",
+                                "Basic abc123");
 
-        verifyNoInteractions(jwtService);
-    }
+                MockHttpServletResponse response = new MockHttpServletResponse();
 
-    @Test
-    void doFilterInternal_shouldNotAuthenticate_whenTokenIsInvalid()
-            throws ServletException, IOException {
+                // Act
+                filter.doFilter(
+                                request,
+                                response,
+                                filterChain);
 
-        // Arrange
-        String token = "invalid-token";
+                // Assert
+                assertNull(
+                                SecurityContextHolder
+                                                .getContext()
+                                                .getAuthentication());
 
-        when(jwtService.isValid(token))
-                .thenReturn(false);
+                verify(filterChain).doFilter(
+                                request,
+                                response);
 
-        MockHttpServletRequest request = new MockHttpServletRequest();
+                verifyNoInteractions(jwtService);
+        }
 
-        request.addHeader(
-                "Authorization",
-                "Bearer " + token);
+        @Test
+        void doFilterInternal_shouldNotAuthenticate_whenTokenIsInvalid()
+                        throws ServletException, IOException {
 
-        MockHttpServletResponse response = new MockHttpServletResponse();
+                // Arrange
+                String token = "invalid-token";
 
-        // Act
-        filter.doFilterInternal(
-                request,
-                response,
-                filterChain);
+                when(jwtService.isValid(token))
+                                .thenReturn(false);
 
-        // Assert
-        assertNull(
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication());
+                MockHttpServletRequest request = new MockHttpServletRequest();
 
-        verify(jwtService).isValid(token);
+                request.addHeader(
+                                "Authorization",
+                                "Bearer " + token);
 
-        verify(filterChain).doFilter(
-                request,
-                response);
+                MockHttpServletResponse response = new MockHttpServletResponse();
 
-        verify(jwtService, never())
-                .extractSubject(anyString());
+                // Act
+                filter.doFilterInternal(
+                                request,
+                                response,
+                                filterChain);
 
-        verify(jwtService, never())
-                .extractRole(anyString());
-    }
+                // Assert
+                assertNull(
+                                SecurityContextHolder
+                                                .getContext()
+                                                .getAuthentication());
 
-    @Test
-    void doFilterInternal_shouldSetAdminAuthority_whenRoleIsAdmin()
-            throws ServletException, IOException {
+                verify(jwtService).isValid(token);
 
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        String token = "valid-admin-token";
+                verify(filterChain).doFilter(
+                                request,
+                                response);
 
-        when(jwtService.isValid(token))
-                .thenReturn(true);
+                verify(jwtService, never())
+                                .extractSubject(anyString());
 
-        when(jwtService.extractSubject(token))
-                .thenReturn(userId.toString());
+                verify(jwtService, never())
+                                .extractRole(anyString());
 
-        when(jwtService.extractRole(token))
-                .thenReturn("ADMIN");
+                verify(jwtService, never())
+                                .extractSessionId(anyString());
+        }
 
-        MockHttpServletRequest request = new MockHttpServletRequest();
+        @Test
+        void doFilterInternal_shouldSetAdminAuthority_whenRoleIsAdmin()
+                        throws ServletException, IOException {
 
-        request.addHeader(
-                "Authorization",
-                "Bearer " + token);
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                UUID sessionId = UUID.randomUUID();
 
-        MockHttpServletResponse response = new MockHttpServletResponse();
+                String token = "valid-admin-token";
 
-        // Act
-        filter.doFilterInternal(
-                request,
-                response,
-                filterChain);
+                when(jwtService.isValid(token))
+                                .thenReturn(true);
 
-        // Assert
-        Authentication authentication = SecurityContextHolder
-                .getContext()
-                .getAuthentication();
+                when(sessionService.isSessionValid(sessionId))
+                                .thenReturn(true);
 
-        assertNotNull(authentication);
+                when(jwtService.extractSubject(token))
+                                .thenReturn(userId.toString());
 
-        assertEquals(
-                userId,
-                authentication.getPrincipal());
+                when(jwtService.extractRole(token))
+                                .thenReturn("ADMIN");
 
-        assertEquals(
-                "ROLE_ADMIN",
-                authentication
-                        .getAuthorities()
-                        .iterator()
-                        .next()
-                        .getAuthority());
+                when(jwtService.extractSessionId(token))
+                                .thenReturn(sessionId.toString());
 
-        verify(filterChain).doFilter(
-                request,
-                response);
-    }
+                MockHttpServletRequest request = new MockHttpServletRequest();
 
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
+                request.addHeader(
+                                "Authorization",
+                                "Bearer " + token);
 
+                MockHttpServletResponse response = new MockHttpServletResponse();
+
+                // Act
+                filter.doFilterInternal(
+                                request,
+                                response,
+                                filterChain);
+
+                // Assert
+                Authentication authentication = SecurityContextHolder
+                                .getContext()
+                                .getAuthentication();
+
+                assertNotNull(authentication);
+
+                assertEquals(
+                                userId,
+                                authentication.getPrincipal());
+
+                assertEquals(
+                                sessionId,
+                                authentication.getDetails());
+
+                assertEquals(
+                                "ROLE_ADMIN",
+                                authentication
+                                                .getAuthorities()
+                                                .iterator()
+                                                .next()
+                                                .getAuthority());
+
+                verify(filterChain).doFilter(
+                                request,
+                                response);
+        }
+
+        @Test
+        void doFilterInternal_shouldNotAuthenticate_whenSessionIsInvalid()
+                        throws ServletException, IOException {
+
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                UUID sessionId = UUID.randomUUID();
+
+                String token = "valid-token";
+
+                when(jwtService.isValid(token))
+                                .thenReturn(true);
+
+                when(jwtService.extractSubject(token))
+                                .thenReturn(userId.toString());
+
+                when(jwtService.extractRole(token))
+                                .thenReturn("USER");
+
+                when(jwtService.extractSessionId(token))
+                                .thenReturn(sessionId.toString());
+
+                when(sessionService.isSessionValid(sessionId))
+                                .thenReturn(false);
+
+                MockHttpServletRequest request = new MockHttpServletRequest();
+
+                request.addHeader(
+                                "Authorization",
+                                "Bearer " + token);
+
+                MockHttpServletResponse response = new MockHttpServletResponse();
+
+                // Act
+                filter.doFilterInternal(
+                                request,
+                                response,
+                                filterChain);
+
+                // Assert
+                assertNull(
+                                SecurityContextHolder
+                                                .getContext()
+                                                .getAuthentication());
+
+                verify(sessionService)
+                                .isSessionValid(sessionId);
+
+                verify(filterChain)
+                                .doFilter(request, response);
+        }
+
+        @AfterEach
+        void tearDown() {
+                SecurityContextHolder.clearContext();
+        }
 }

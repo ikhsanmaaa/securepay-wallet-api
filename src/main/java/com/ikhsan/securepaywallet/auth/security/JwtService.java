@@ -27,16 +27,26 @@ public class JwtService {
 
     }
 
-    public String generateAccessToken(UUID userId, String role) {
+    public String generateAccessToken(UUID userId, String role, UUID sessionId) {
         Date now = new Date();
 
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("role", role)
+                .claim("sessionId", sessionId.toString())
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + accessTokenExpiration))
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public String extractSessionId(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("sessionId", String.class);
     }
 
     public String extractSubject(String token) {

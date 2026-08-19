@@ -28,11 +28,13 @@ class JwtServiceTest {
         // Arrange
         UUID userId = UUID.randomUUID();
         String role = "USER";
+        UUID sessionId = UUID.randomUUID();
 
         // Act
         String token = jwtService.generateAccessToken(
                 userId,
-                role);
+                role,
+                sessionId);
 
         // Assert
         assertNotNull(token);
@@ -45,10 +47,12 @@ class JwtServiceTest {
         // Arrange
         UUID userId = UUID.randomUUID();
         String role = "USER";
+        UUID sessionId = UUID.randomUUID();
 
         String token = jwtService.generateAccessToken(
                 userId,
-                role);
+                role,
+                sessionId);
 
         // Act
         String subject = jwtService.extractSubject(token);
@@ -65,25 +69,56 @@ class JwtServiceTest {
         // Arrange
         UUID userId = UUID.randomUUID();
         String role = "USER";
+        UUID sessionId = UUID.randomUUID();
 
         String token = jwtService.generateAccessToken(
                 userId,
-                role);
+                role,
+                sessionId);
 
         // Act
         String extractedRole = jwtService.extractRole(token);
 
         // Assert
-        assertEquals(role, extractedRole);
+        assertEquals(
+                role,
+                extractedRole);
+    }
+
+    @Test
+    void extractSessionId_shouldReturnSessionId() {
+
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        String role = "USER";
+        UUID sessionId = UUID.randomUUID();
+
+        String token = jwtService.generateAccessToken(
+                userId,
+                role,
+                sessionId);
+
+        // Act
+        String extractedSessionId = jwtService.extractSessionId(token);
+
+        // Assert
+        assertEquals(
+                sessionId.toString(),
+                extractedSessionId);
     }
 
     @Test
     void isValid_shouldReturnTrueForValidToken() {
 
         // Arrange
+        UUID userId = UUID.randomUUID();
+        String role = "USER";
+        UUID sessionId = UUID.randomUUID();
+
         String token = jwtService.generateAccessToken(
-                UUID.randomUUID(),
-                "USER");
+                userId,
+                role,
+                sessionId);
 
         // Act
         boolean valid = jwtService.isValid(token);

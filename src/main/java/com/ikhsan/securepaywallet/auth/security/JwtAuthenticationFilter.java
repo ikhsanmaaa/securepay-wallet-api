@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.ikhsan.securepaywallet.auth.session.service.SessionService;
 import com.ikhsan.securepaywallet.enumerate.Role;
 
 import jakarta.servlet.FilterChain;
@@ -21,12 +22,14 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final SessionService sessionService;
 
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String AUTH_PREFIX = "Authorization";
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService, SessionService sessionService) {
         this.jwtService = jwtService;
+        this.sessionService = sessionService;
     }
 
     @Override
@@ -49,9 +52,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String subject = jwtService.extractSubject(token);
+        UUID sessionId = UUID.fromString(jwtService.extractSessionId(token));
 
-        UUID userId = UUID.fromString(subject);
+        if (!sessionService.isSessionValid(sessionId)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        UUID userId = UUID.fromString(jwtService.extractSubject(token));
         Role role = Role.valueOf(jwtService.extractRole(token));
 
         SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role.name());
@@ -60,6 +67,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 userId,
                 null,
                 List.of(authority));
+
+        authentication.setDetails(sessionId);
 
         SecurityContextHolder
                 .getContext()
