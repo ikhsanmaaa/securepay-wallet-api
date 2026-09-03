@@ -52,6 +52,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (!jwtService.isAccessToken(token)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         UUID sessionId = UUID.fromString(jwtService.extractSessionId(token));
 
         if (!sessionService.isSessionValid(sessionId)) {
@@ -69,6 +74,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 List.of(authority));
 
         authentication.setDetails(sessionId);
+
+        request.setAttribute("sessionId", sessionId);
 
         SecurityContextHolder
                 .getContext()

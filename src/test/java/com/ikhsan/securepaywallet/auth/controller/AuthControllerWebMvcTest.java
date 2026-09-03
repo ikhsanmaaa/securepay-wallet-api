@@ -1,85 +1,105 @@
 package com.ikhsan.securepaywallet.auth.controller;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.server.ResponseStatusException;
 
+import com.ikhsan.securepaywallet.auth.dto.req.RefreshTokenRequest;
+import com.ikhsan.securepaywallet.auth.dto.res.TokenResponse;
 import com.ikhsan.securepaywallet.auth.security.JwtAuthenticationFilter;
-import com.ikhsan.securepaywallet.auth.security.JwtService;
-import com.ikhsan.securepaywallet.auth.service.AuthService;
+import com.ikhsan.securepaywallet.auth.security.SessionActivityFilter;
 import com.ikhsan.securepaywallet.auth.session.service.SessionService;
-import com.ikhsan.securepaywallet.common.config.SecurityConfig;
+import com.ikhsan.securepaywallet.auth.service.AuthService;
 
-@ActiveProfiles("test")
 @WebMvcTest(controllers = AuthController.class)
-@ContextConfiguration(classes = {
-        AuthController.class,
-        SecurityConfig.class,
-        JwtAuthenticationFilter.class,
-        JwtService.class
-})
-@TestPropertySource(properties = {
-        "jwt.secret=hwDe+1mWsxCXpK48PDrwlXCF2ioFhbSpmxcmWTvZbR0=",
-        "jwt.access-token-expiration=900000"
-})
+@AutoConfigureMockMvc(addFilters = false)
+@ContextConfiguration(classes = AuthController.class)
 class AuthControllerWebMvcTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @Autowired
-    private JwtService jwtService;
+        @MockitoBean
+        private AuthService authService;
 
-    @MockitoBean
-    private AuthService authService;
+        @MockitoBean
+        private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @MockitoBean
-    private SessionService sessionService;
+        @MockitoBean
+        private SessionActivityFilter sessionActivityFilter;
 
-    @Test
-    void logout_shouldReturnNoContent_whenAuthenticated()
-            throws Exception {
+        @MockitoBean
+        private SessionService sessionService;
 
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        @Test
+        void refresh_shouldReturnNewAccessToken_whenRefreshTokenIsValid()
+                        throws Exception {
 
-        String token = jwtService.generateAccessToken(
-                userId,
-                "USER",
-                sessionId);
+                // Arrange
+                TokenResponse response = TokenResponse.builder()
+                                .accessToken("new-access-token")
+                                .build();
 
-        when(sessionService.isSessionValid(sessionId))
-                .thenReturn(true);
+                when(authService.refresh(any(RefreshTokenRequest.class)))
+                                .thenReturn(response);
 
-        // Act & Assert
-        mockMvc.perform(
-                post("/api/auth/logout")
-                        .header(
-                                "Authorization",
-                                "Bearer " + token))
-                .andExpect(status().isNoContent());
+                // Act & Assert
+                mockMvc.perform(
+                                post("/api/auth/refresh")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .accept(MediaType.APPLICATION_JSON)
+                                                .content("""
+                                                                {
+                                                                    "refreshToken": "valid-refresh-token"
+                                                                }
+                                                                """))
+                                .andExpect(status().isOk())
+                                .andExpect(
+                                                jsonPath("$.data.accessToken")
+                                                                .value("new-access-token"));
 
-        verify(authService).logout(sessionId);
-    }
+                verify(authService)
+                                .refresh(any(RefreshTokenRequest.class));
+        }
 
-    @Test
-    void logout_shouldReturnUnauthorized_whenTokenIsMissing()
-            throws Exception {
+        @Test
+        void refresh_shouldReturnUnauthorized_whenRefreshTokenIsInvalid()
+                        throws Exception {
 
-        mockMvc.perform(
-                post("/api/auth/logout")).andExpect(status().isUnauthorized());
-    }
+                // Arrange
+                when(authService.refresh(any(RefreshTokenRequest.class)))
+                                .thenThrow(
+                                                new ResponseStatusException(
+                                                                HttpStatus.UNAUTHORIZED,
+                                                                "invalid refresh token"));
+
+                // Act & Assert
+                mockMvc.perform(
+                                post("/api/auth/refresh")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .accept(MediaType.APPLICATION_JSON)
+                                                .content("""
+                                                                {
+                                                                    "refreshToken": "invalid-refresh-token"
+                                                                }
+                                                                """))
+                                .andExpect(status().isUnauthorized());
+
+                verify(authService)
+                                .refresh(any(RefreshTokenRequest.class));
+        }
 }

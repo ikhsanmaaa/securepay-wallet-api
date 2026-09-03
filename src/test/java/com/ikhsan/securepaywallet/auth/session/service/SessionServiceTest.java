@@ -23,6 +23,12 @@ import com.ikhsan.securepaywallet.user.entity.UserEntity;
 @ExtendWith(MockitoExtension.class)
 class SessionServiceTest {
 
+        private static final Instant FIXED_NOW = Instant.parse("2026-08-16T06:00:00Z");
+
+        private static final long IDLE_TIMEOUT_SECONDS = 30 * 60;
+
+        private static final long ABSOLUTE_TIMEOUT_SECONDS = 60 * 60;
+
         @Mock
         private SessionRepository sessionRepository;
 
@@ -30,12 +36,11 @@ class SessionServiceTest {
 
         private SessionService sessionService;
 
-        private final Instant fixedNow = Instant.parse("2026-08-16T06:00:00Z");
-
         @BeforeEach
         void setUp() {
+
                 clock = Clock.fixed(
-                                fixedNow,
+                                FIXED_NOW,
                                 ZoneOffset.UTC);
 
                 sessionService = new SessionService(
@@ -43,128 +48,257 @@ class SessionServiceTest {
                                 clock);
         }
 
+        // =========================
+        // CREATE SESSION
+        // =========================
+
         @Test
         void createSession_shouldCreateSessionWithCorrectTimestamps() {
+
+                // Arrange
                 UserEntity user = new UserEntity();
 
-                SessionEntity savedSession = new SessionEntity();
-                savedSession.setUser(user);
-                savedSession.setCreatedAt(fixedNow);
-                savedSession.setLastActivityAt(fixedNow);
-                savedSession.setExpiresAt(
-                                fixedNow.plusSeconds(60 * 60));
-
                 when(sessionRepository.save(any(SessionEntity.class)))
-                                .thenReturn(savedSession);
+                                .thenAnswer(invocation -> invocation.getArgument(0));
 
+                // Act
                 SessionEntity result = sessionService.createSession(user);
 
+                // Assert
                 assertNotNull(result);
-                assertEquals(user, result.getUser());
-                assertEquals(fixedNow, result.getCreatedAt());
-                assertEquals(fixedNow, result.getLastActivityAt());
-                assertEquals(
-                                fixedNow.plusSeconds(60 * 60),
-                                result.getExpiresAt());
-                assertNull(result.getRevokedAt());
 
-                verify(sessionRepository).save(any(SessionEntity.class));
+                assertEquals(
+                                user,
+                                result.getUser());
+
+                assertEquals(
+                                FIXED_NOW,
+                                result.getCreatedAt());
+
+                assertEquals(
+                                FIXED_NOW,
+                                result.getLastActivityAt());
+
+                assertEquals(
+                                FIXED_NOW.plusSeconds(
+                                                ABSOLUTE_TIMEOUT_SECONDS),
+                                result.getExpiresAt());
+
+                assertNull(
+                                result.getRevokedAt());
+
+                verify(sessionRepository)
+                                .save(any(SessionEntity.class));
         }
+
+        // =========================
+        // SESSION VALIDATION
+        // =========================
 
         @Test
         void isSessionValid_shouldReturnTrue_whenSessionIsActive() {
+
+                // Arrange
                 UUID sessionId = UUID.randomUUID();
 
                 SessionEntity session = createSession(
-                                fixedNow,
-                                fixedNow,
-                                fixedNow.plusSeconds(60 * 60));
+                                FIXED_NOW.minusSeconds(10 * 60),
+                                FIXED_NOW.minusSeconds(5 * 60),
+                                FIXED_NOW.plusSeconds(50 * 60));
 
                 when(sessionRepository.findById(sessionId))
                                 .thenReturn(Optional.of(session));
 
+                // Act
                 boolean result = sessionService.isSessionValid(sessionId);
 
+                // Assert
                 assertTrue(result);
         }
 
         @Test
-        void isSessionValid_shouldReturnFalse_whenSessionIsRevoked() {
-                UUID sessionId = UUID.randomUUID();
-
-                SessionEntity session = createSession(
-                                fixedNow,
-                                fixedNow,
-                                fixedNow.plusSeconds(60 * 60));
-
-                session.setRevokedAt(fixedNow);
-
-                when(sessionRepository.findById(sessionId))
-                                .thenReturn(Optional.of(session));
-
-                boolean result = sessionService.isSessionValid(sessionId);
-
-                assertFalse(result);
-        }
-
-        @Test
-        void isSessionValid_shouldReturnFalse_whenAbsoluteTimeoutIsReached() {
-                UUID sessionId = UUID.randomUUID();
-
-                SessionEntity session = createSession(
-                                fixedNow.minusSeconds(60 * 60),
-                                fixedNow.minusSeconds(60),
-                                fixedNow);
-
-                when(sessionRepository.findById(sessionId))
-                                .thenReturn(Optional.of(session));
-
-                boolean result = sessionService.isSessionValid(sessionId);
-
-                assertFalse(result);
-        }
-
-        @Test
-        void isSessionValid_shouldReturnFalse_whenIdleTimeoutIsReached() {
-                UUID sessionId = UUID.randomUUID();
-
-                SessionEntity session = createSession(
-                                fixedNow.minusSeconds(60 * 60),
-                                fixedNow.minusSeconds(30 * 60),
-                                fixedNow.plusSeconds(60 * 60));
-
-                when(sessionRepository.findById(sessionId))
-                                .thenReturn(Optional.of(session));
-
-                boolean result = sessionService.isSessionValid(sessionId);
-
-                assertFalse(result);
-        }
-
-        @Test
         void isSessionValid_shouldReturnFalse_whenSessionDoesNotExist() {
+
+                // Arrange
                 UUID sessionId = UUID.randomUUID();
 
                 when(sessionRepository.findById(sessionId))
                                 .thenReturn(Optional.empty());
 
+                // Act
                 boolean result = sessionService.isSessionValid(sessionId);
 
+                // Assert
                 assertFalse(result);
         }
 
-        private SessionEntity createSession(
-                        Instant createdAt,
-                        Instant lastActivityAt,
-                        Instant expiresAt) {
-                SessionEntity session = new SessionEntity();
+        @Test
+        void isSessionValid_shouldReturnFalse_whenSessionIsRevoked() {
 
-                session.setCreatedAt(createdAt);
-                session.setLastActivityAt(lastActivityAt);
-                session.setExpiresAt(expiresAt);
+                // Arrange
+                UUID sessionId = UUID.randomUUID();
 
-                return session;
+                SessionEntity session = createSession(
+                                FIXED_NOW.minusSeconds(10 * 60),
+                                FIXED_NOW.minusSeconds(5 * 60),
+                                FIXED_NOW.plusSeconds(50 * 60));
+
+                session.setRevokedAt(
+                                FIXED_NOW.minusSeconds(60));
+
+                when(sessionRepository.findById(sessionId))
+                                .thenReturn(Optional.of(session));
+
+                // Act
+                boolean result = sessionService.isSessionValid(sessionId);
+
+                // Assert
+                assertFalse(result);
         }
+
+        // =========================
+        // ABSOLUTE TIMEOUT
+        // =========================
+
+        @Test
+        void isSessionValid_shouldReturnFalse_whenAbsoluteTimeoutIsReached() {
+
+                // Arrange
+                UUID sessionId = UUID.randomUUID();
+
+                SessionEntity session = createSession(
+                                FIXED_NOW.minusSeconds(
+                                                ABSOLUTE_TIMEOUT_SECONDS),
+                                FIXED_NOW.minusSeconds(60),
+                                FIXED_NOW);
+
+                when(sessionRepository.findById(sessionId))
+                                .thenReturn(Optional.of(session));
+
+                // Act
+                boolean result = sessionService.isSessionValid(sessionId);
+
+                // Assert
+                assertFalse(result);
+        }
+
+        @Test
+        void isSessionValid_shouldReturnFalse_whenAbsoluteTimeoutHasPassed() {
+
+                // Arrange
+                UUID sessionId = UUID.randomUUID();
+
+                SessionEntity session = createSession(
+                                FIXED_NOW.minusSeconds(
+                                                ABSOLUTE_TIMEOUT_SECONDS + 1),
+                                FIXED_NOW.minusSeconds(60),
+                                FIXED_NOW.minusSeconds(1));
+
+                when(sessionRepository.findById(sessionId))
+                                .thenReturn(Optional.of(session));
+
+                // Act
+                boolean result = sessionService.isSessionValid(sessionId);
+
+                // Assert
+                assertFalse(result);
+        }
+
+        @Test
+        void isSessionValid_shouldReturnTrue_justBeforeAbsoluteTimeout() {
+
+                // Arrange
+                UUID sessionId = UUID.randomUUID();
+
+                SessionEntity session = createSession(
+                                FIXED_NOW.minusSeconds(
+                                                ABSOLUTE_TIMEOUT_SECONDS - 1),
+                                FIXED_NOW.minusSeconds(60),
+                                FIXED_NOW.plusSeconds(1));
+
+                when(sessionRepository.findById(sessionId))
+                                .thenReturn(Optional.of(session));
+
+                // Act
+                boolean result = sessionService.isSessionValid(sessionId);
+
+                // Assert
+                assertTrue(result);
+        }
+
+        // =========================
+        // IDLE TIMEOUT
+        // =========================
+
+        @Test
+        void isSessionValid_shouldReturnFalse_whenIdleTimeoutIsReached() {
+
+                // Arrange
+                UUID sessionId = UUID.randomUUID();
+
+                SessionEntity session = createSession(
+                                FIXED_NOW.minusSeconds(60 * 60),
+                                FIXED_NOW.minusSeconds(
+                                                IDLE_TIMEOUT_SECONDS),
+                                FIXED_NOW.plusSeconds(60 * 60));
+
+                when(sessionRepository.findById(sessionId))
+                                .thenReturn(Optional.of(session));
+
+                // Act
+                boolean result = sessionService.isSessionValid(sessionId);
+
+                // Assert
+                assertFalse(result);
+        }
+
+        @Test
+        void isSessionValid_shouldReturnFalse_whenIdleTimeoutHasPassed() {
+
+                // Arrange
+                UUID sessionId = UUID.randomUUID();
+
+                SessionEntity session = createSession(
+                                FIXED_NOW.minusSeconds(60 * 60),
+                                FIXED_NOW.minusSeconds(
+                                                IDLE_TIMEOUT_SECONDS + 1),
+                                FIXED_NOW.plusSeconds(60 * 60));
+
+                when(sessionRepository.findById(sessionId))
+                                .thenReturn(Optional.of(session));
+
+                // Act
+                boolean result = sessionService.isSessionValid(sessionId);
+
+                // Assert
+                assertFalse(result);
+        }
+
+        @Test
+        void isSessionValid_shouldReturnTrue_justBeforeIdleTimeout() {
+
+                // Arrange
+                UUID sessionId = UUID.randomUUID();
+
+                SessionEntity session = createSession(
+                                FIXED_NOW.minusSeconds(60 * 60),
+                                FIXED_NOW.minusSeconds(
+                                                IDLE_TIMEOUT_SECONDS - 1),
+                                FIXED_NOW.plusSeconds(60 * 60));
+
+                when(sessionRepository.findById(sessionId))
+                                .thenReturn(Optional.of(session));
+
+                // Act
+                boolean result = sessionService.isSessionValid(sessionId);
+
+                // Assert
+                assertTrue(result);
+        }
+
+        // =========================
+        // REVOKE SESSION
+        // =========================
 
         @Test
         void revokeSession_shouldSetRevokedAt_whenSessionIsActive() {
@@ -173,6 +307,7 @@ class SessionServiceTest {
                 UUID sessionId = UUID.randomUUID();
 
                 SessionEntity session = new SessionEntity();
+
                 session.setRevokedAt(null);
 
                 when(sessionRepository.findById(sessionId))
@@ -182,9 +317,12 @@ class SessionServiceTest {
                 sessionService.revokeSession(sessionId);
 
                 // Assert
-                assertNotNull(session.getRevokedAt());
+                assertEquals(
+                                FIXED_NOW,
+                                session.getRevokedAt());
 
-                verify(sessionRepository).save(session);
+                verify(sessionRepository)
+                                .save(session);
         }
 
         @Test
@@ -193,10 +331,10 @@ class SessionServiceTest {
                 // Arrange
                 UUID sessionId = UUID.randomUUID();
 
-                Instant revokedAt = Instant.parse(
-                                "2026-08-16T06:00:00Z");
+                Instant revokedAt = FIXED_NOW.minusSeconds(60);
 
                 SessionEntity session = new SessionEntity();
+
                 session.setRevokedAt(revokedAt);
 
                 when(sessionRepository.findById(sessionId))
@@ -232,15 +370,19 @@ class SessionServiceTest {
                                 .save(any(SessionEntity.class));
         }
 
+        // =========================
+        // UPDATE ACTIVITY
+        // =========================
+
         @Test
         void updateActivity_shouldUpdateLastActivityAt() {
 
                 // Arrange
                 UUID sessionId = UUID.randomUUID();
 
-                Instant oldActivityAt = Instant.parse("2026-08-16T06:00:00Z");
+                Instant oldActivityAt = FIXED_NOW.minusSeconds(10 * 60);
 
-                Instant absoluteExpiration = Instant.parse("2026-08-16T07:00:00Z");
+                Instant absoluteExpiration = FIXED_NOW.plusSeconds(60 * 60);
 
                 SessionEntity session = new SessionEntity();
 
@@ -256,7 +398,11 @@ class SessionServiceTest {
 
                 // Assert
                 assertEquals(
-                                fixedNow,
+                                FIXED_NOW,
+                                session.getLastActivityAt());
+
+                assertNotEquals(
+                                oldActivityAt,
                                 session.getLastActivityAt());
 
                 assertEquals(
@@ -273,9 +419,9 @@ class SessionServiceTest {
                 // Arrange
                 UUID sessionId = UUID.randomUUID();
 
-                Instant revokedAt = Instant.parse("2026-08-16T05:30:00Z");
+                Instant revokedAt = FIXED_NOW.minusSeconds(30 * 60);
 
-                Instant oldActivityAt = Instant.parse("2026-08-16T05:00:00Z");
+                Instant oldActivityAt = FIXED_NOW.minusSeconds(60 * 60);
 
                 SessionEntity session = new SessionEntity();
 
@@ -315,4 +461,21 @@ class SessionServiceTest {
                                 .save(any(SessionEntity.class));
         }
 
+        // =========================
+        // HELPER
+        // =========================
+
+        private SessionEntity createSession(
+                        Instant createdAt,
+                        Instant lastActivityAt,
+                        Instant expiresAt) {
+
+                SessionEntity session = new SessionEntity();
+
+                session.setCreatedAt(createdAt);
+                session.setLastActivityAt(lastActivityAt);
+                session.setExpiresAt(expiresAt);
+
+                return session;
+        }
 }

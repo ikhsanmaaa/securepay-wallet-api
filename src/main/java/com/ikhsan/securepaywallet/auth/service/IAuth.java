@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import com.ikhsan.securepaywallet.auth.dto.req.ChangePasswordRequest;
 import com.ikhsan.securepaywallet.auth.dto.req.LoginRequest;
+import com.ikhsan.securepaywallet.auth.dto.req.RefreshTokenRequest;
 import com.ikhsan.securepaywallet.auth.dto.req.RegisterUserRequest;
 import com.ikhsan.securepaywallet.auth.dto.res.TokenResponse;
 import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
@@ -17,4 +18,6 @@ public interface IAuth {
     void logout(UUID sessionId);
 
     void changePassword(String username, ChangePasswordRequest request);
+
+    TokenResponse refresh(RefreshTokenRequest request);
 }

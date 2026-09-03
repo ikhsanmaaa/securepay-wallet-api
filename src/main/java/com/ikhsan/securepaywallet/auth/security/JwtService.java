@@ -16,14 +16,19 @@ public class JwtService {
 
     private final SecretKey secretKey;
     private final long accessTokenExpiration;
+    private final long refreshTokenExpiration;
 
     public JwtService(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.access-token-expiration}") long accessTokenExpiration) {
+            @Value("${jwt.access-token-expiration}") long accessTokenExpiration,
+            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration)
+
+    {
         this.secretKey = Keys.hmacShaKeyFor(
                 io.jsonwebtoken.io.Decoders.BASE64.decode(secret));
 
         this.accessTokenExpiration = accessTokenExpiration;
+        this.refreshTokenExpiration = refreshTokenExpiration;
 
     }
 
@@ -34,10 +39,35 @@ public class JwtService {
                 .subject(String.valueOf(userId))
                 .claim("role", role)
                 .claim("sessionId", sessionId.toString())
+                .claim("type", "access")
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + accessTokenExpiration))
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public String generateRefreshToken(UUID userId, UUID sessionId) {
+
+        Date now = new Date();
+
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .claim("sessionId", sessionId.toString())
+                .claim("type", "refresh")
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + refreshTokenExpiration))
+                .signWith(secretKey)
+                .compact();
+    }
+
+    public String extractTokenType(String token) {
+
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("type", String.class);
     }
 
     public String extractSessionId(String token) {
@@ -76,5 +106,15 @@ public class JwtService {
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    public boolean isAccessToken(String token) {
+        return "access".equals(
+                extractTokenType(token));
+    }
+
+    public boolean isRefreshToken(String token) {
+        return "refresh".equals(
+                extractTokenType(token));
     }
 }

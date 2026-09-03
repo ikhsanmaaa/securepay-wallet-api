@@ -9,134 +9,136 @@ import org.junit.jupiter.api.Test;
 
 class JwtServiceTest {
 
-    private JwtService jwtService;
+        private JwtService jwtService;
 
-    private static final String SECRET = "vxAutHKUypyC/XMvDlqWCteVahXdBCsgjy2aJp1u9Iw=";
+        private static final String SECRET = "vxAutHKUypyC/XMvDlqWCteVahXdBCsgjy2aJp1u9Iw=";
 
-    private static final long EXPIRATION = 900000L;
+        private static final long EXPIRATION = 900000L;
+        private static final long REFRESH_EXPIRATION = 3600000L;
 
-    @BeforeEach
-    void setUp() {
-        jwtService = new JwtService(
-                SECRET,
-                EXPIRATION);
-    }
+        @BeforeEach
+        void setUp() {
+                jwtService = new JwtService(
+                                SECRET,
+                                EXPIRATION,
+                                REFRESH_EXPIRATION);
+        }
 
-    @Test
-    void generateAccessToken_shouldGenerateValidToken() {
+        @Test
+        void generateAccessToken_shouldGenerateValidToken() {
 
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        String role = "USER";
-        UUID sessionId = UUID.randomUUID();
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                String role = "USER";
+                UUID sessionId = UUID.randomUUID();
 
-        // Act
-        String token = jwtService.generateAccessToken(
-                userId,
-                role,
-                sessionId);
+                // Act
+                String token = jwtService.generateAccessToken(
+                                userId,
+                                role,
+                                sessionId);
 
-        // Assert
-        assertNotNull(token);
-        assertFalse(token.isBlank());
-    }
+                // Assert
+                assertNotNull(token);
+                assertFalse(token.isBlank());
+        }
 
-    @Test
-    void extractSubject_shouldReturnUserId() {
+        @Test
+        void extractSubject_shouldReturnUserId() {
 
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        String role = "USER";
-        UUID sessionId = UUID.randomUUID();
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                String role = "USER";
+                UUID sessionId = UUID.randomUUID();
 
-        String token = jwtService.generateAccessToken(
-                userId,
-                role,
-                sessionId);
+                String token = jwtService.generateAccessToken(
+                                userId,
+                                role,
+                                sessionId);
 
-        // Act
-        String subject = jwtService.extractSubject(token);
+                // Act
+                String subject = jwtService.extractSubject(token);
 
-        // Assert
-        assertEquals(
-                userId.toString(),
-                subject);
-    }
+                // Assert
+                assertEquals(
+                                userId.toString(),
+                                subject);
+        }
 
-    @Test
-    void extractRole_shouldReturnRole() {
+        @Test
+        void extractRole_shouldReturnRole() {
 
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        String role = "USER";
-        UUID sessionId = UUID.randomUUID();
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                String role = "USER";
+                UUID sessionId = UUID.randomUUID();
 
-        String token = jwtService.generateAccessToken(
-                userId,
-                role,
-                sessionId);
+                String token = jwtService.generateAccessToken(
+                                userId,
+                                role,
+                                sessionId);
 
-        // Act
-        String extractedRole = jwtService.extractRole(token);
+                // Act
+                String extractedRole = jwtService.extractRole(token);
 
-        // Assert
-        assertEquals(
-                role,
-                extractedRole);
-    }
+                // Assert
+                assertEquals(
+                                role,
+                                extractedRole);
+        }
 
-    @Test
-    void extractSessionId_shouldReturnSessionId() {
+        @Test
+        void extractSessionId_shouldReturnSessionId() {
 
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        String role = "USER";
-        UUID sessionId = UUID.randomUUID();
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                String role = "USER";
+                UUID sessionId = UUID.randomUUID();
 
-        String token = jwtService.generateAccessToken(
-                userId,
-                role,
-                sessionId);
+                String token = jwtService.generateAccessToken(
+                                userId,
+                                role,
+                                sessionId);
 
-        // Act
-        String extractedSessionId = jwtService.extractSessionId(token);
+                // Act
+                String extractedSessionId = jwtService.extractSessionId(token);
 
-        // Assert
-        assertEquals(
-                sessionId.toString(),
-                extractedSessionId);
-    }
+                // Assert
+                assertEquals(
+                                sessionId.toString(),
+                                extractedSessionId);
+        }
 
-    @Test
-    void isValid_shouldReturnTrueForValidToken() {
+        @Test
+        void isValid_shouldReturnTrueForValidToken() {
 
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        String role = "USER";
-        UUID sessionId = UUID.randomUUID();
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                String role = "USER";
+                UUID sessionId = UUID.randomUUID();
 
-        String token = jwtService.generateAccessToken(
-                userId,
-                role,
-                sessionId);
+                String token = jwtService.generateAccessToken(
+                                userId,
+                                role,
+                                sessionId);
 
-        // Act
-        boolean valid = jwtService.isValid(token);
+                // Act
+                boolean valid = jwtService.isValid(token);
 
-        // Assert
-        assertTrue(valid);
-    }
+                // Assert
+                assertTrue(valid);
+        }
 
-    @Test
-    void isValid_shouldReturnFalseForInvalidToken() {
+        @Test
+        void isValid_shouldReturnFalseForInvalidToken() {
 
-        // Arrange
-        String invalidToken = "this.is.not.a.valid.jwt";
+                // Arrange
+                String invalidToken = "this.is.not.a.valid.jwt";
 
-        // Act
-        boolean valid = jwtService.isValid(invalidToken);
+                // Act
+                boolean valid = jwtService.isValid(invalidToken);
 
-        // Assert
-        assertFalse(valid);
-    }
+                // Assert
+                assertFalse(valid);
+        }
 }

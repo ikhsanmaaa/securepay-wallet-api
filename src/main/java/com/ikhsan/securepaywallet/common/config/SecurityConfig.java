@@ -18,6 +18,14 @@ import jakarta.servlet.http.HttpServletResponse;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+        private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+        public SecurityConfig(
+                        JwtAuthenticationFilter jwtAuthenticationFilter) {
+
+                this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        }
+
         @Bean
         public SecurityFilterChain securityFilterChain(
                         HttpSecurity http,
@@ -45,7 +53,9 @@ public class SecurityConfig {
                                                                                         HttpServletResponse.SC_UNAUTHORIZED);
                                                                 }))
 
-                                .addFilterBefore(jwtAuthenticatorFilter, UsernamePasswordAuthenticationFilter.class)
+                                .addFilterBefore(
+                                                jwtAuthenticationFilter,
+                                                UsernamePasswordAuthenticationFilter.class)
 
                                 .build();
         }

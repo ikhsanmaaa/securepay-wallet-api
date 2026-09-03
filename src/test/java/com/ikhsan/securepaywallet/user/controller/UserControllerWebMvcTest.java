@@ -2,6 +2,7 @@ package com.ikhsan.securepaywallet.user.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,8 +21,10 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.ikhsan.securepaywallet.auth.security.JwtAuthenticationFilter;
 import com.ikhsan.securepaywallet.auth.security.JwtService;
+import com.ikhsan.securepaywallet.auth.session.interceptor.SessionActivityInterceptor;
 import com.ikhsan.securepaywallet.auth.session.service.SessionService;
 import com.ikhsan.securepaywallet.common.config.SecurityConfig;
+import com.ikhsan.securepaywallet.common.config.WebMvcConfig;
 import com.ikhsan.securepaywallet.user.service.UserService;
 
 @ActiveProfiles("test")
@@ -29,8 +32,10 @@ import com.ikhsan.securepaywallet.user.service.UserService;
 @ContextConfiguration(classes = {
                 UserController.class,
                 SecurityConfig.class,
+                WebMvcConfig.class,
                 JwtAuthenticationFilter.class,
-                JwtService.class
+                JwtService.class,
+                SessionActivityInterceptor.class
 })
 @TestPropertySource(properties = {
                 "jwt.secret=hwDe+1mWsxCXpK48PDrwlXCF2ioFhbSpmxcmWTvZbR0=",
@@ -199,4 +204,61 @@ class UserControllerWebMvcTest {
                                 .isSessionValid(sessionId);
         }
 
+        @Test
+        void getUser_shouldUpdateSessionActivity_whenRequestIsSuccessful()
+                        throws Exception {
+
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                UUID sessionId = UUID.randomUUID();
+
+                String token = jwtService.generateAccessToken(
+                                userId,
+                                "USER",
+                                sessionId);
+
+                when(sessionService.isSessionValid(sessionId))
+                                .thenReturn(true);
+
+                // Act
+                mockMvc.perform(
+                                get("/api/users/me")
+                                                .header(
+                                                                "Authorization",
+                                                                "Bearer " + token))
+                                .andExpect(status().isOk());
+
+                // Assert
+                verify(sessionService)
+                                .updateActivity(sessionId);
+        }
+
+        @Test
+        void adminEndpoint_shouldNotUpdateSessionActivity_whenNotAnnotated()
+                        throws Exception {
+
+                // Arrange
+                UUID userId = UUID.randomUUID();
+                UUID sessionId = UUID.randomUUID();
+
+                String token = jwtService.generateAccessToken(
+                                userId,
+                                "ADMIN",
+                                sessionId);
+
+                when(sessionService.isSessionValid(sessionId))
+                                .thenReturn(true);
+
+                // Act
+                mockMvc.perform(
+                                get("/api/users/admin-test")
+                                                .header(
+                                                                "Authorization",
+                                                                "Bearer " + token))
+                                .andExpect(status().isOk());
+
+                // Assert
+                verify(sessionService, never())
+                                .updateActivity(sessionId);
+        }
 }

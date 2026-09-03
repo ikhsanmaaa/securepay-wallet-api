@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ikhsan.securepaywallet.auth.dto.req.ChangePasswordRequest;
 import com.ikhsan.securepaywallet.auth.dto.req.LoginRequest;
+import com.ikhsan.securepaywallet.auth.dto.req.RefreshTokenRequest;
 import com.ikhsan.securepaywallet.auth.dto.req.RegisterUserRequest;
 import com.ikhsan.securepaywallet.auth.dto.res.TokenResponse;
 import com.ikhsan.securepaywallet.auth.service.AuthService;
@@ -60,5 +61,12 @@ public class AuthController {
     public void changePassword(String username, ChangePasswordRequest request) {
 
         authService.changePassword(username, request);
+    }
+
+    @PostMapping(path = "/refresh")
+    public WebResponse<TokenResponse> refresh(@RequestBody RefreshTokenRequest request) {
+        TokenResponse tokenResponse = authService.refresh(request);
+
+        return WebResponse.<TokenResponse>builder().data(tokenResponse).build();
     }
 }

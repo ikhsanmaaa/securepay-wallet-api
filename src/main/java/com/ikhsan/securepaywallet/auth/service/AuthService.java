@@ -9,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.ikhsan.securepaywallet.auth.dto.req.ChangePasswordRequest;
 import com.ikhsan.securepaywallet.auth.dto.req.LoginRequest;
+import com.ikhsan.securepaywallet.auth.dto.req.RefreshTokenRequest;
 import com.ikhsan.securepaywallet.auth.dto.req.RegisterUserRequest;
 import com.ikhsan.securepaywallet.auth.dto.res.TokenResponse;
 import com.ikhsan.securepaywallet.auth.security.JwtService;
@@ -80,8 +81,10 @@ public class AuthService implements IAuth {
         SessionEntity session = sessionService.createSession(user);
 
         String accessToken = jwtService.generateAccessToken(user.getId(), user.getRole().name(), session.getId());
+        String refreshToken = jwtService.generateRefreshToken(user.getId(), session.getId());
 
-        return TokenResponse.builder().token(accessToken).build();
+        return TokenResponse.builder().accessToken(accessToken)
+                .refreshToken(refreshToken).build();
 
     }
 
@@ -106,6 +109,36 @@ public class AuthService implements IAuth {
         } else {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "new password didnt match");
         }
+
+    }
+
+    @Transactional
+    public TokenResponse refresh(RefreshTokenRequest request) {
+
+        String refreshToken = request.getRefreshToken();
+
+        if (!jwtService.isValid(refreshToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "refresh token is invalid!");
+        }
+
+        if (!jwtService.isRefreshToken(refreshToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "refresh token is invalid!");
+        }
+
+        UUID sessionId = UUID.fromString(jwtService.extractSessionId(refreshToken));
+
+        if (!sessionService.isSessionValid(sessionId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "session is expired!");
+        }
+
+        UUID userId = UUID.fromString(jwtService.extractSubject(refreshToken));
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "user not found!"));
+
+        String accessToken = jwtService.generateAccessToken(user.getId(), user.getRole().name(), sessionId);
+
+        return TokenResponse.builder().accessToken(accessToken).build();
 
     }
 }

@@ -33,9 +33,11 @@ class JwtAuthenticationFilterTest {
         void setUp() {
                 jwtService = mock(JwtService.class);
                 sessionService = mock(SessionService.class);
+
                 filter = new JwtAuthenticationFilter(
                                 jwtService,
                                 sessionService);
+
                 filterChain = mock(FilterChain.class);
 
                 SecurityContextHolder.clearContext();
@@ -49,11 +51,16 @@ class JwtAuthenticationFilterTest {
                 UUID userId = UUID.randomUUID();
                 UUID sessionId = UUID.randomUUID();
 
-                String role = "USER";
                 String token = "valid-token";
 
                 when(jwtService.isValid(token))
                                 .thenReturn(true);
+
+                when(jwtService.isAccessToken(token))
+                                .thenReturn(true);
+
+                when(jwtService.extractSessionId(token))
+                                .thenReturn(sessionId.toString());
 
                 when(sessionService.isSessionValid(sessionId))
                                 .thenReturn(true);
@@ -62,10 +69,7 @@ class JwtAuthenticationFilterTest {
                                 .thenReturn(userId.toString());
 
                 when(jwtService.extractRole(token))
-                                .thenReturn(role);
-
-                when(jwtService.extractSessionId(token))
-                                .thenReturn(sessionId.toString());
+                                .thenReturn("USER");
 
                 MockHttpServletRequest request = new MockHttpServletRequest();
 
@@ -104,9 +108,26 @@ class JwtAuthenticationFilterTest {
                                                 .next()
                                                 .getAuthority());
 
-                verify(filterChain).doFilter(
-                                request,
-                                response);
+                verify(jwtService)
+                                .isValid(token);
+
+                verify(jwtService)
+                                .isAccessToken(token);
+
+                verify(jwtService)
+                                .extractSessionId(token);
+
+                verify(sessionService)
+                                .isSessionValid(sessionId);
+
+                verify(jwtService)
+                                .extractSubject(token);
+
+                verify(jwtService)
+                                .extractRole(token);
+
+                verify(filterChain)
+                                .doFilter(request, response);
         }
 
         @Test
@@ -130,11 +151,14 @@ class JwtAuthenticationFilterTest {
                                                 .getContext()
                                                 .getAuthentication());
 
-                verify(filterChain).doFilter(
-                                request,
-                                response);
+                verify(filterChain)
+                                .doFilter(
+                                                request,
+                                                response);
 
-                verifyNoInteractions(jwtService);
+                verifyNoInteractions(
+                                jwtService,
+                                sessionService);
         }
 
         @Test
@@ -162,11 +186,14 @@ class JwtAuthenticationFilterTest {
                                                 .getContext()
                                                 .getAuthentication());
 
-                verify(filterChain).doFilter(
-                                request,
-                                response);
+                verify(filterChain)
+                                .doFilter(
+                                                request,
+                                                response);
 
-                verifyNoInteractions(jwtService);
+                verifyNoInteractions(
+                                jwtService,
+                                sessionService);
         }
 
         @Test
@@ -199,11 +226,16 @@ class JwtAuthenticationFilterTest {
                                                 .getContext()
                                                 .getAuthentication());
 
-                verify(jwtService).isValid(token);
+                verify(jwtService)
+                                .isValid(token);
 
-                verify(filterChain).doFilter(
-                                request,
-                                response);
+                verify(jwtService, never())
+                                .isAccessToken(anyString());
+
+                verifyNoInteractions(sessionService);
+
+                verify(jwtService, never())
+                                .extractSessionId(anyString());
 
                 verify(jwtService, never())
                                 .extractSubject(anyString());
@@ -211,8 +243,130 @@ class JwtAuthenticationFilterTest {
                 verify(jwtService, never())
                                 .extractRole(anyString());
 
+                verify(filterChain)
+                                .doFilter(
+                                                request,
+                                                response);
+        }
+
+        @Test
+        void doFilterInternal_shouldNotAuthenticate_whenTokenIsNotAccessToken()
+                        throws ServletException, IOException {
+
+                // Arrange
+                String token = "refresh-token";
+
+                when(jwtService.isValid(token))
+                                .thenReturn(true);
+
+                when(jwtService.isAccessToken(token))
+                                .thenReturn(false);
+
+                MockHttpServletRequest request = new MockHttpServletRequest();
+
+                request.addHeader(
+                                "Authorization",
+                                "Bearer " + token);
+
+                MockHttpServletResponse response = new MockHttpServletResponse();
+
+                // Act
+                filter.doFilterInternal(
+                                request,
+                                response,
+                                filterChain);
+
+                // Assert
+                assertNull(
+                                SecurityContextHolder
+                                                .getContext()
+                                                .getAuthentication());
+
+                verify(jwtService)
+                                .isValid(token);
+
+                verify(jwtService)
+                                .isAccessToken(token);
+
+                verifyNoInteractions(sessionService);
+
                 verify(jwtService, never())
                                 .extractSessionId(anyString());
+
+                verify(jwtService, never())
+                                .extractSubject(anyString());
+
+                verify(jwtService, never())
+                                .extractRole(anyString());
+
+                verify(filterChain)
+                                .doFilter(
+                                                request,
+                                                response);
+        }
+
+        @Test
+        void doFilterInternal_shouldNotAuthenticate_whenSessionIsInvalid()
+                        throws ServletException, IOException {
+
+                // Arrange
+                UUID sessionId = UUID.randomUUID();
+                String token = "valid-token";
+
+                when(jwtService.isValid(token))
+                                .thenReturn(true);
+
+                when(jwtService.isAccessToken(token))
+                                .thenReturn(true);
+
+                when(jwtService.extractSessionId(token))
+                                .thenReturn(sessionId.toString());
+
+                when(sessionService.isSessionValid(sessionId))
+                                .thenReturn(false);
+
+                MockHttpServletRequest request = new MockHttpServletRequest();
+
+                request.addHeader(
+                                "Authorization",
+                                "Bearer " + token);
+
+                MockHttpServletResponse response = new MockHttpServletResponse();
+
+                // Act
+                filter.doFilterInternal(
+                                request,
+                                response,
+                                filterChain);
+
+                // Assert
+                assertNull(
+                                SecurityContextHolder
+                                                .getContext()
+                                                .getAuthentication());
+
+                verify(jwtService)
+                                .isValid(token);
+
+                verify(jwtService)
+                                .isAccessToken(token);
+
+                verify(jwtService)
+                                .extractSessionId(token);
+
+                verify(sessionService)
+                                .isSessionValid(sessionId);
+
+                verify(jwtService, never())
+                                .extractSubject(anyString());
+
+                verify(jwtService, never())
+                                .extractRole(anyString());
+
+                verify(filterChain)
+                                .doFilter(
+                                                request,
+                                                response);
         }
 
         @Test
@@ -228,6 +382,12 @@ class JwtAuthenticationFilterTest {
                 when(jwtService.isValid(token))
                                 .thenReturn(true);
 
+                when(jwtService.isAccessToken(token))
+                                .thenReturn(true);
+
+                when(jwtService.extractSessionId(token))
+                                .thenReturn(sessionId.toString());
+
                 when(sessionService.isSessionValid(sessionId))
                                 .thenReturn(true);
 
@@ -236,9 +396,6 @@ class JwtAuthenticationFilterTest {
 
                 when(jwtService.extractRole(token))
                                 .thenReturn("ADMIN");
-
-                when(jwtService.extractSessionId(token))
-                                .thenReturn(sessionId.toString());
 
                 MockHttpServletRequest request = new MockHttpServletRequest();
 
@@ -277,61 +434,28 @@ class JwtAuthenticationFilterTest {
                                                 .next()
                                                 .getAuthority());
 
-                verify(filterChain).doFilter(
-                                request,
-                                response);
-        }
+                verify(jwtService)
+                                .isValid(token);
 
-        @Test
-        void doFilterInternal_shouldNotAuthenticate_whenSessionIsInvalid()
-                        throws ServletException, IOException {
+                verify(jwtService)
+                                .isAccessToken(token);
 
-                // Arrange
-                UUID userId = UUID.randomUUID();
-                UUID sessionId = UUID.randomUUID();
-
-                String token = "valid-token";
-
-                when(jwtService.isValid(token))
-                                .thenReturn(true);
-
-                when(jwtService.extractSubject(token))
-                                .thenReturn(userId.toString());
-
-                when(jwtService.extractRole(token))
-                                .thenReturn("USER");
-
-                when(jwtService.extractSessionId(token))
-                                .thenReturn(sessionId.toString());
-
-                when(sessionService.isSessionValid(sessionId))
-                                .thenReturn(false);
-
-                MockHttpServletRequest request = new MockHttpServletRequest();
-
-                request.addHeader(
-                                "Authorization",
-                                "Bearer " + token);
-
-                MockHttpServletResponse response = new MockHttpServletResponse();
-
-                // Act
-                filter.doFilterInternal(
-                                request,
-                                response,
-                                filterChain);
-
-                // Assert
-                assertNull(
-                                SecurityContextHolder
-                                                .getContext()
-                                                .getAuthentication());
+                verify(jwtService)
+                                .extractSessionId(token);
 
                 verify(sessionService)
                                 .isSessionValid(sessionId);
 
+                verify(jwtService)
+                                .extractSubject(token);
+
+                verify(jwtService)
+                                .extractRole(token);
+
                 verify(filterChain)
-                                .doFilter(request, response);
+                                .doFilter(
+                                                request,
+                                                response);
         }
 
         @AfterEach
