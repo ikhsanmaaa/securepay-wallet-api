@@ -22,6 +22,7 @@ public class RegisterUserRequest {
     @NotBlank(message = "nama tidak boleh kosong")
     private String name;
 
+    @NotBlank(message = "email tidak boleh kosong")
     @Email(message = "email harus terdaftar")
     private String email;
 

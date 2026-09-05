@@ -17,7 +17,7 @@ public interface IAuth {
 
     void logout(UUID sessionId);
 
-    void changePassword(String username, ChangePasswordRequest request);
+    void changePassword(UUID userId, ChangePasswordRequest request);
 
     TokenResponse refresh(RefreshTokenRequest request);
 }

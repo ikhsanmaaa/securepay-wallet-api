@@ -1,6 +1,7 @@
 package com.ikhsan.securepaywallet.auth.service;
 
 import java.util.UUID;
+import java.util.Objects;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -94,15 +95,15 @@ public class AuthService implements IAuth {
     }
 
     @Transactional
-    public void changePassword(String username, ChangePasswordRequest request) {
-        UserEntity user = userRepository.findFirstByUsername(username)
+    public void changePassword(UUID userId, ChangePasswordRequest request) {
+        UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not Found!"));
         boolean isPasswordMatch = passwordEncoder.matches(request.getOldPassword(), user.getPassword());
         if (!isPasswordMatch) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "password is invalid!");
         }
 
-        if (request.getNewPassword() == request.getNewConfirmPassword()) {
+        if (Objects.equals(request.getNewPassword(), request.getNewConfirmPassword())) {
             String hashNewPassword = passwordEncoder.encode(request.getNewPassword());
             user.setPassword(hashNewPassword);
             userRepository.save(user);
