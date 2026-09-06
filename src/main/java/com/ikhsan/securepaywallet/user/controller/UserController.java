@@ -6,16 +6,20 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ikhsan.securepaywallet.auth.session.annotation.SessionActivity;
 import com.ikhsan.securepaywallet.common.dto.WebResponse;
+import com.ikhsan.securepaywallet.user.dto.req.EditRequestDto;
 import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
 import com.ikhsan.securepaywallet.user.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @Tag(name = "Users", description = "User management APIs")
 @RestController
@@ -45,5 +49,17 @@ public class UserController {
         return WebResponse.<String>builder()
                 .data("admin access")
                 .build();
+    }
+
+    @SessionActivity
+    @Operation(summary = "Update current user", description = "Update user profile")
+    @PutMapping(path = "/me", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse<UserResponse> updateUser(Authentication authentication,
+            @Valid @RequestBody EditRequestDto request) {
+        UUID userId = (UUID) authentication.getPrincipal();
+
+        UserResponse userResponse = userService.updateUser(userId, request);
+
+        return WebResponse.<UserResponse>builder().data(userResponse).build();
     }
 }

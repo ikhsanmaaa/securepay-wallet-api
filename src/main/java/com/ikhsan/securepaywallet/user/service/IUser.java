@@ -2,10 +2,13 @@ package com.ikhsan.securepaywallet.user.service;
 
 import java.util.UUID;
 
+import com.ikhsan.securepaywallet.user.dto.req.EditRequestDto;
 import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
 
 public interface IUser {
 
-    UserResponse getUserById(UUID userID);
+    UserResponse getUserById(UUID userId);
+
+    UserResponse updateUser(UUID userId, EditRequestDto request);
 
 }

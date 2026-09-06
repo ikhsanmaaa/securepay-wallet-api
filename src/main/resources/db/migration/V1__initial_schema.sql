@@ -1,12 +1,13 @@
 CREATE TABLE users (
     id UUID PRIMARY KEY,
-     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE,
     username VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     phone_number VARCHAR(255),
     password VARCHAR(255) NOT NULL,
     role VARCHAR(255) NOT NULL,
+     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE,
 
     CONSTRAINT uk_users_username UNIQUE (username),
     CONSTRAINT uk_users_email UNIQUE (email),
@@ -15,11 +16,11 @@ CREATE TABLE users (
 
 CREATE TABLE wallet (
     id UUID PRIMARY KEY,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE,
     user_id UUID NOT NULL,
     balance NUMERIC(19, 2) NOT NULL,
     status VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE,
 
     CONSTRAINT uk_wallet_user_id UNIQUE (user_id),
 
@@ -30,8 +31,6 @@ CREATE TABLE wallet (
 
 CREATE TABLE transaction (
     id UUID PRIMARY KEY,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE,
     sender_wallet_id UUID,
     receiver_wallet_id UUID,
     reference_number VARCHAR(50) NOT NULL,
@@ -40,6 +39,8 @@ CREATE TABLE transaction (
     amount NUMERIC(19, 2) NOT NULL,
     fee NUMERIC(19, 2) NOT NULL,
     description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE,
 
     CONSTRAINT uk_transaction_reference_number
         UNIQUE (reference_number),

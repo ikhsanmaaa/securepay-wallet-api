@@ -15,11 +15,11 @@ import lombok.Setter;
 public class EditRequestDto {
 
     @NotBlank
-    @Size(min = 5, message = "username minimal lima huruf!")
+    @Size(min = 5, message = "minimum of five chars")
     private String username;
 
     @NotBlank
-    @Size(min = 5, message = "nama minimal lima huruf!")
+    @Size(min = 5, message = "minimum of five chars")
     private String name;
 
     @NotBlank

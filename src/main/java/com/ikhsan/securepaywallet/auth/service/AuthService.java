@@ -57,6 +57,7 @@ public class AuthService implements IAuth {
         var user = new UserEntity();
 
         user.setUsername(request.getUsername());
+        user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setRole(Role.USER);
@@ -100,7 +101,7 @@ public class AuthService implements IAuth {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not Found!"));
         boolean isPasswordMatch = passwordEncoder.matches(request.getOldPassword(), user.getPassword());
         if (!isPasswordMatch) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "password is invalid!");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "password is invalid!");
         }
 
         if (Objects.equals(request.getNewPassword(), request.getNewConfirmPassword())) {
