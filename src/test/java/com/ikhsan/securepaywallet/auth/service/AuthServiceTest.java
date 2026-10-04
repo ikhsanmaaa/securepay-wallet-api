@@ -20,15 +20,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ikhsan.securepaywallet.auth.dto.req.LoginRequest;
+import com.ikhsan.securepaywallet.auth.dto.req.RegisterUserRequest;
 import com.ikhsan.securepaywallet.auth.dto.res.TokenResponse;
 import com.ikhsan.securepaywallet.auth.security.JwtService;
 import com.ikhsan.securepaywallet.auth.session.entity.SessionEntity;
 import com.ikhsan.securepaywallet.auth.session.service.SessionService;
 import com.ikhsan.securepaywallet.enumerate.Role;
+import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
 import com.ikhsan.securepaywallet.user.entity.UserEntity;
 import com.ikhsan.securepaywallet.user.repo.UserRepository;
 
 import com.ikhsan.securepaywallet.auth.dto.req.RefreshTokenRequest;
+import com.ikhsan.securepaywallet.wallet.service.WalletService;
 
 class AuthServiceTest {
 
@@ -44,6 +47,9 @@ class AuthServiceTest {
         @Mock
         private SessionService sessionService;
 
+        @Mock
+        private WalletService walletService;
+
         private AuthService authService;
 
         @BeforeEach
@@ -54,7 +60,8 @@ class AuthServiceTest {
                                 userRepository,
                                 passwordEncoder,
                                 jwtService,
-                                sessionService);
+                                sessionService,
+                                walletService);
         }
 
         @Test
@@ -459,6 +466,84 @@ class AuthServiceTest {
                                                 any(),
                                                 any(),
                                                 any());
+        }
+
+        @Test
+        void register_shouldPersistUserAndCreateWallet_whenRequestIsValid() {
+
+                // Arrange
+                RegisterUserRequest request = RegisterUserRequest.builder()
+                                .username("johndoe")
+                                .name("John Doe")
+                                .email("john@mail.com")
+                                .phoneNumber("08123456789")
+                                .password("Password1")
+                                .build();
+
+                when(userRepository.existsByUsername("johndoe")).thenReturn(false);
+                when(userRepository.existsByEmail("john@mail.com")).thenReturn(false);
+                when(passwordEncoder.encode("Password1")).thenReturn("encoded-password");
+
+                // Act
+                UserResponse response = authService.register(request);
+
+                // Assert
+                assertNotNull(response);
+                assertEquals("johndoe", response.getUsername());
+                assertEquals("john@mail.com", response.getEmail());
+                assertEquals("08123456789", response.getPhoneNumber());
+
+                verify(userRepository).save(any(UserEntity.class));
+                verify(walletService).createWallet(any(UserEntity.class));
+        }
+
+        @Test
+        void register_shouldThrowConflict_whenUsernameExists() {
+
+                // Arrange
+                RegisterUserRequest request = RegisterUserRequest.builder()
+                                .username("johndoe")
+                                .name("John Doe")
+                                .email("john@mail.com")
+                                .password("Password1")
+                                .build();
+
+                when(userRepository.existsByUsername("johndoe")).thenReturn(true);
+
+                // Act & Assert
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
+                                () -> authService.register(request));
+
+                assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+
+                verify(userRepository, never()).save(any(UserEntity.class));
+                verify(walletService, never()).createWallet(any(UserEntity.class));
+        }
+
+        @Test
+        void register_shouldThrowConflict_whenEmailExists() {
+
+                // Arrange
+                RegisterUserRequest request = RegisterUserRequest.builder()
+                                .username("johndoe")
+                                .name("John Doe")
+                                .email("john@mail.com")
+                                .password("Password1")
+                                .build();
+
+                when(userRepository.existsByUsername("johndoe")).thenReturn(false);
+                when(userRepository.existsByEmail("john@mail.com")).thenReturn(true);
+
+                // Act & Assert
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
+                                () -> authService.register(request));
+
+                assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+
+                verify(userRepository, never()).save(any(UserEntity.class));
+                verify(walletService, never()).createWallet(any(UserEntity.class));
         }
 
 }

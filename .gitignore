@@ -35,3 +35,5 @@ build/
 /architecture
 
 AGENTS.md
+.kiro
+/graphify-out

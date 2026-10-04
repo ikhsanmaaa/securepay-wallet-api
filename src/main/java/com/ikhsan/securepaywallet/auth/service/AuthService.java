@@ -20,8 +20,9 @@ import com.ikhsan.securepaywallet.enumerate.Role;
 import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
 import com.ikhsan.securepaywallet.user.entity.UserEntity;
 import com.ikhsan.securepaywallet.user.repo.UserRepository;
+import com.ikhsan.securepaywallet.wallet.service.WalletService;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService implements IAuth {
@@ -30,13 +31,15 @@ public class AuthService implements IAuth {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final SessionService sessionService;
+    private final WalletService walletService;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
-            SessionService sessionService) {
+            SessionService sessionService, WalletService walletService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.sessionService = sessionService;
+        this.walletService = walletService;
     }
 
     @Transactional
@@ -64,6 +67,8 @@ public class AuthService implements IAuth {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         userRepository.save(user);
+
+        walletService.createWallet(user);
 
         return UserResponse.builder().username(user.getUsername()).email(user.getEmail())
                 .phoneNumber(user.getPhoneNumber()).build();

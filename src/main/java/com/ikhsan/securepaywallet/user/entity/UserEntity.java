@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import com.ikhsan.securepaywallet.common.baseclass.BaseEntity;
 import com.ikhsan.securepaywallet.enumerate.Role;
-import com.ikhsan.securepaywallet.wallet.WalletEntity;
+import com.ikhsan.securepaywallet.wallet.entity.WalletEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

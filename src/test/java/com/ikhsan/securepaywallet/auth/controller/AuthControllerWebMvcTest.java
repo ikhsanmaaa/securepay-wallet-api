@@ -1,6 +1,7 @@
 package com.ikhsan.securepaywallet.auth.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -19,11 +20,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ikhsan.securepaywallet.auth.dto.req.RefreshTokenRequest;
+import com.ikhsan.securepaywallet.auth.dto.req.RegisterUserRequest;
 import com.ikhsan.securepaywallet.auth.dto.res.TokenResponse;
 import com.ikhsan.securepaywallet.auth.security.JwtAuthenticationFilter;
-import com.ikhsan.securepaywallet.auth.security.SessionActivityFilter;
 import com.ikhsan.securepaywallet.auth.session.service.SessionService;
 import com.ikhsan.securepaywallet.auth.service.AuthService;
+import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
 
 @WebMvcTest(controllers = AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -38,9 +40,6 @@ class AuthControllerWebMvcTest {
 
         @MockitoBean
         private JwtAuthenticationFilter jwtAuthenticationFilter;
-
-        @MockitoBean
-        private SessionActivityFilter sessionActivityFilter;
 
         @MockitoBean
         private SessionService sessionService;
@@ -75,7 +74,6 @@ class AuthControllerWebMvcTest {
                 verify(authService)
                                 .refresh(any(RefreshTokenRequest.class));
         }
-
         @Test
         void refresh_shouldReturnUnauthorized_whenRefreshTokenIsInvalid()
                         throws Exception {
@@ -101,5 +99,60 @@ class AuthControllerWebMvcTest {
 
                 verify(authService)
                                 .refresh(any(RefreshTokenRequest.class));
+        }
+
+        @Test
+        void register_shouldReturnUser_whenRequestIsValid() throws Exception {
+
+                // Arrange
+                UserResponse response = UserResponse.builder()
+                                .username("johndoe")
+                                .email("john@mail.com")
+                                .phoneNumber("08123456789")
+                                .build();
+
+                when(authService.register(any(RegisterUserRequest.class)))
+                                .thenReturn(response);
+
+                // Act & Assert
+                mockMvc.perform(
+                                post("/api/auth/register")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .accept(MediaType.APPLICATION_JSON)
+                                                .content("""
+                                                                {
+                                                                    "username": "johndoe",
+                                                                    "name": "John Doe",
+                                                                    "email": "john@mail.com",
+                                                                    "phoneNumber": "08123456789",
+                                                                    "password": "Password1"
+                                                                }
+                                                                """))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.username").value("johndoe"))
+                                .andExpect(jsonPath("$.data.email").value("john@mail.com"));
+
+                verify(authService).register(any(RegisterUserRequest.class));
+        }
+
+        @Test
+        void register_shouldReturnBadRequest_whenPasswordIsWeak() throws Exception {
+
+                // Act & Assert
+                mockMvc.perform(
+                                post("/api/auth/register")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .accept(MediaType.APPLICATION_JSON)
+                                                .content("""
+                                                                {
+                                                                    "username": "johndoe",
+                                                                    "name": "John Doe",
+                                                                    "email": "john@mail.com",
+                                                                    "password": "weak"
+                                                                }
+                                                                """))
+                                .andExpect(status().isBadRequest());
+
+                verify(authService, never()).register(any(RegisterUserRequest.class));
         }
 }

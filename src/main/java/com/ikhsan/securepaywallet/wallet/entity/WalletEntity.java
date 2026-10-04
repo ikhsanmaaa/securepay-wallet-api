@@ -1,4 +1,4 @@
-package com.ikhsan.securepaywallet.wallet;
+package com.ikhsan.securepaywallet.wallet.entity;
 
 import java.math.BigDecimal;
 import java.util.UUID;

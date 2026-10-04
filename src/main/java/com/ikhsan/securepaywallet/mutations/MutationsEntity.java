@@ -5,12 +5,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.ikhsan.securepaywallet.transaction.TransactionEntity;
-import com.ikhsan.securepaywallet.wallet.WalletEntity;
+import com.ikhsan.securepaywallet.wallet.entity.WalletEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -25,6 +27,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "mutations")
 public class MutationsEntity {
 

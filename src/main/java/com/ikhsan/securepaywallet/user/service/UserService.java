@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ikhsan.securepaywallet.common.service.ValidateService;
@@ -13,8 +14,6 @@ import com.ikhsan.securepaywallet.user.dto.req.EditRequestDto;
 import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
 import com.ikhsan.securepaywallet.user.entity.UserEntity;
 import com.ikhsan.securepaywallet.user.repo.UserRepository;
-
-import jakarta.transaction.Transactional;
 
 @Service
 public class UserService implements IUser {
@@ -25,6 +24,7 @@ public class UserService implements IUser {
         this.userRepository = userRepository;
     }
 
+    @Transactional(readOnly = true)
     public UserResponse getUserById(UUID userId) {
 
         UserEntity user = userRepository.findById(userId)
@@ -54,7 +54,7 @@ public class UserService implements IUser {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "email already exists!");
         }
 
-        if (userRepository.existsByPhoneNumberAndIdNot(request.getPhoneNumber(), userId)) {
+        if (request.getPhoneNumber() != null && userRepository.existsByPhoneNumberAndIdNot(request.getPhoneNumber(), userId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "phone number already exists!");
         }
 
