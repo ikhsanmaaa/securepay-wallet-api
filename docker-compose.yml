@@ -1,20 +1,38 @@
-
 services:
   postgres:
-    image: postgres:16
-    container_name: spring-postgres
-    restart: always
-
-    network_mode: host
-
+    image: postgres:16-alpine
+    container_name: securepay-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: securepay-wallet-api
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      PGPORT: "5433"
-
+    ports:
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d securepay-wallet-api"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: securepay-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/securepay-wallet-api
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      JWT_SECRET: ${JWT_SECRET:-vxAutHKUypyC/XMvDlqWCteVahXdBCsgjy2aJp1u9Iw=}
 
 volumes:
   postgres_data:
