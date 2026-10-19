@@ -31,7 +31,7 @@ import com.ikhsan.securepaywallet.user.entity.UserEntity;
 import com.ikhsan.securepaywallet.user.repo.UserRepository;
 
 import com.ikhsan.securepaywallet.auth.dto.req.RefreshTokenRequest;
-import com.ikhsan.securepaywallet.wallet.service.WalletService;
+import com.ikhsan.securepaywallet.wallet.service.IWallet;
 
 class AuthServiceTest {
 
@@ -48,7 +48,7 @@ class AuthServiceTest {
         private SessionService sessionService;
 
         @Mock
-        private WalletService walletService;
+        private IWallet walletService;
 
         private AuthService authService;
 
@@ -482,6 +482,7 @@ class AuthServiceTest {
 
                 when(userRepository.existsByUsername("johndoe")).thenReturn(false);
                 when(userRepository.existsByEmail("john@mail.com")).thenReturn(false);
+                when(userRepository.existsByPhoneNumber("08123456789")).thenReturn(false);
                 when(passwordEncoder.encode("Password1")).thenReturn("encoded-password");
 
                 // Act
@@ -534,6 +535,33 @@ class AuthServiceTest {
 
                 when(userRepository.existsByUsername("johndoe")).thenReturn(false);
                 when(userRepository.existsByEmail("john@mail.com")).thenReturn(true);
+
+                // Act & Assert
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
+                                () -> authService.register(request));
+
+                assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+
+                verify(userRepository, never()).save(any(UserEntity.class));
+                verify(walletService, never()).createWallet(any(UserEntity.class));
+        }
+
+        @Test
+        void register_shouldThrowConflict_whenPhoneNumberExists() {
+
+                // Arrange
+                RegisterUserRequest request = RegisterUserRequest.builder()
+                                .username("johndoe")
+                                .name("John Doe")
+                                .email("john@mail.com")
+                                .phoneNumber("08123456789")
+                                .password("Password1")
+                                .build();
+
+                when(userRepository.existsByUsername("johndoe")).thenReturn(false);
+                when(userRepository.existsByEmail("john@mail.com")).thenReturn(false);
+                when(userRepository.existsByPhoneNumber("08123456789")).thenReturn(true);
 
                 // Act & Assert
                 ResponseStatusException exception = assertThrows(

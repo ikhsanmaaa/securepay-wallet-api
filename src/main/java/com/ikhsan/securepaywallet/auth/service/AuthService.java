@@ -1,11 +1,12 @@
 package com.ikhsan.securepaywallet.auth.service;
 
-import java.util.UUID;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ikhsan.securepaywallet.auth.dto.req.ChangePasswordRequest;
@@ -20,9 +21,7 @@ import com.ikhsan.securepaywallet.enumerate.Role;
 import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
 import com.ikhsan.securepaywallet.user.entity.UserEntity;
 import com.ikhsan.securepaywallet.user.repo.UserRepository;
-import com.ikhsan.securepaywallet.wallet.service.WalletService;
-
-import org.springframework.transaction.annotation.Transactional;
+import com.ikhsan.securepaywallet.wallet.service.IWallet;
 
 @Service
 public class AuthService implements IAuth {
@@ -31,10 +30,10 @@ public class AuthService implements IAuth {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final SessionService sessionService;
-    private final WalletService walletService;
+    private final IWallet walletService;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
-            SessionService sessionService, WalletService walletService) {
+            SessionService sessionService, IWallet walletService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -55,6 +54,13 @@ public class AuthService implements IAuth {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "email already exists");
+        }
+
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()
+                && userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "phone number already exists");
         }
 
         var user = new UserEntity();

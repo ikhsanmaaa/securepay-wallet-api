@@ -23,8 +23,8 @@ import com.ikhsan.securepaywallet.auth.dto.req.RefreshTokenRequest;
 import com.ikhsan.securepaywallet.auth.dto.req.RegisterUserRequest;
 import com.ikhsan.securepaywallet.auth.dto.res.TokenResponse;
 import com.ikhsan.securepaywallet.auth.security.JwtAuthenticationFilter;
-import com.ikhsan.securepaywallet.auth.session.service.SessionService;
 import com.ikhsan.securepaywallet.auth.service.AuthService;
+import com.ikhsan.securepaywallet.auth.session.service.SessionService;
 import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
 
 @WebMvcTest(controllers = AuthController.class)
@@ -32,127 +32,119 @@ import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
 @ContextConfiguration(classes = AuthController.class)
 class AuthControllerWebMvcTest {
 
-        @Autowired
-        private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
-        @MockitoBean
-        private AuthService authService;
+    @MockitoBean
+    private AuthService authService;
 
-        @MockitoBean
-        private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-        @MockitoBean
-        private SessionService sessionService;
+    @MockitoBean
+    private SessionService sessionService;
 
-        @Test
-        void refresh_shouldReturnNewAccessToken_whenRefreshTokenIsValid()
-                        throws Exception {
+    @Test
+    void refresh_shouldReturnNewAccessToken_whenRefreshTokenIsValid() throws Exception {
 
-                // Arrange
-                TokenResponse response = TokenResponse.builder()
-                                .accessToken("new-access-token")
-                                .build();
+        // Arrange
+        TokenResponse response = TokenResponse.builder()
+                .accessToken("new-access-token")
+                .build();
 
-                when(authService.refresh(any(RefreshTokenRequest.class)))
-                                .thenReturn(response);
+        when(authService.refresh(any(RefreshTokenRequest.class)))
+                .thenReturn(response);
 
-                // Act & Assert
-                mockMvc.perform(
-                                post("/api/auth/refresh")
-                                                .contentType(MediaType.APPLICATION_JSON)
-                                                .accept(MediaType.APPLICATION_JSON)
-                                                .content("""
-                                                                {
-                                                                    "refreshToken": "valid-refresh-token"
-                                                                }
-                                                                """))
-                                .andExpect(status().isOk())
-                                .andExpect(
-                                                jsonPath("$.data.accessToken")
-                                                                .value("new-access-token"));
+        // Act & Assert
+        mockMvc.perform(
+                post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "refreshToken": "valid-refresh-token"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").value("new-access-token"));
 
-                verify(authService)
-                                .refresh(any(RefreshTokenRequest.class));
-        }
-        @Test
-        void refresh_shouldReturnUnauthorized_whenRefreshTokenIsInvalid()
-                        throws Exception {
+        verify(authService).refresh(any(RefreshTokenRequest.class));
+    }
 
-                // Arrange
-                when(authService.refresh(any(RefreshTokenRequest.class)))
-                                .thenThrow(
-                                                new ResponseStatusException(
-                                                                HttpStatus.UNAUTHORIZED,
-                                                                "invalid refresh token"));
+    @Test
+    void refresh_shouldReturnUnauthorized_whenRefreshTokenIsInvalid() throws Exception {
 
-                // Act & Assert
-                mockMvc.perform(
-                                post("/api/auth/refresh")
-                                                .contentType(MediaType.APPLICATION_JSON)
-                                                .accept(MediaType.APPLICATION_JSON)
-                                                .content("""
-                                                                {
-                                                                    "refreshToken": "invalid-refresh-token"
-                                                                }
-                                                                """))
-                                .andExpect(status().isUnauthorized());
+        // Arrange
+        when(authService.refresh(any(RefreshTokenRequest.class)))
+                .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid refresh token"));
 
-                verify(authService)
-                                .refresh(any(RefreshTokenRequest.class));
-        }
+        // Act & Assert
+        mockMvc.perform(
+                post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "refreshToken": "invalid-refresh-token"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized());
 
-        @Test
-        void register_shouldReturnUser_whenRequestIsValid() throws Exception {
+        verify(authService).refresh(any(RefreshTokenRequest.class));
+    }
 
-                // Arrange
-                UserResponse response = UserResponse.builder()
-                                .username("johndoe")
-                                .email("john@mail.com")
-                                .phoneNumber("08123456789")
-                                .build();
+    @Test
+    void register_shouldReturnUser_whenRequestIsValid() throws Exception {
 
-                when(authService.register(any(RegisterUserRequest.class)))
-                                .thenReturn(response);
+        // Arrange
+        UserResponse response = UserResponse.builder()
+                .username("johndoe")
+                .email("john@mail.com")
+                .phoneNumber("08123456789")
+                .build();
 
-                // Act & Assert
-                mockMvc.perform(
-                                post("/api/auth/register")
-                                                .contentType(MediaType.APPLICATION_JSON)
-                                                .accept(MediaType.APPLICATION_JSON)
-                                                .content("""
-                                                                {
-                                                                    "username": "johndoe",
-                                                                    "name": "John Doe",
-                                                                    "email": "john@mail.com",
-                                                                    "phoneNumber": "08123456789",
-                                                                    "password": "Password1"
-                                                                }
-                                                                """))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.data.username").value("johndoe"))
-                                .andExpect(jsonPath("$.data.email").value("john@mail.com"));
+        when(authService.register(any(RegisterUserRequest.class)))
+                .thenReturn(response);
 
-                verify(authService).register(any(RegisterUserRequest.class));
-        }
+        // Act & Assert
+        mockMvc.perform(
+                post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "username": "johndoe",
+                                    "name": "John Doe",
+                                    "email": "john@mail.com",
+                                    "phoneNumber": "08123456789",
+                                    "password": "Password1"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.username").value("johndoe"))
+                .andExpect(jsonPath("$.data.email").value("john@mail.com"));
 
-        @Test
-        void register_shouldReturnBadRequest_whenPasswordIsWeak() throws Exception {
+        verify(authService).register(any(RegisterUserRequest.class));
+    }
 
-                // Act & Assert
-                mockMvc.perform(
-                                post("/api/auth/register")
-                                                .contentType(MediaType.APPLICATION_JSON)
-                                                .accept(MediaType.APPLICATION_JSON)
-                                                .content("""
-                                                                {
-                                                                    "username": "johndoe",
-                                                                    "name": "John Doe",
-                                                                    "email": "john@mail.com",
-                                                                    "password": "weak"
-                                                                }
-                                                                """))
-                                .andExpect(status().isBadRequest());
+    @Test
+    void register_shouldReturnBadRequest_whenPasswordIsWeak() throws Exception {
 
-                verify(authService, never()).register(any(RegisterUserRequest.class));
-        }
+        // Act & Assert
+        mockMvc.perform(
+                post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "username": "johndoe",
+                                    "name": "John Doe",
+                                    "email": "john@mail.com",
+                                    "password": "weak"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(authService, never()).register(any(RegisterUserRequest.class));
+    }
 }

@@ -3,7 +3,6 @@ package com.ikhsan.securepaywallet.user.controller;
 import java.util.UUID;
 
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -42,14 +41,6 @@ public class UserController {
         return WebResponse.<UserResponse>builder().data(userResponse).build();
     }
 
-    @GetMapping("/admin-test")
-    @PreAuthorize("hasRole('ADMIN')")
-    public WebResponse<String> adminTest() {
-
-        return WebResponse.<String>builder()
-                .data("admin access")
-                .build();
-    }
 
     @SessionActivity
     @Operation(summary = "Update current user", description = "Update user profile")

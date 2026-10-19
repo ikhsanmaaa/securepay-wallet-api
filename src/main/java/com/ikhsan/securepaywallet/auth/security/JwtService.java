@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.UUID;
 
 import javax.crypto.SecretKey;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -21,15 +22,11 @@ public class JwtService {
     public JwtService(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-token-expiration}") long accessTokenExpiration,
-            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration)
-
-    {
+            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration) {
         this.secretKey = Keys.hmacShaKeyFor(
                 io.jsonwebtoken.io.Decoders.BASE64.decode(secret));
-
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
-
     }
 
     public String generateAccessToken(UUID userId, String role, UUID sessionId) {
@@ -47,7 +44,6 @@ public class JwtService {
     }
 
     public String generateRefreshToken(UUID userId, UUID sessionId) {
-
         Date now = new Date();
 
         return Jwts.builder()
@@ -61,7 +57,6 @@ public class JwtService {
     }
 
     public String extractTokenType(String token) {
-
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
@@ -101,7 +96,8 @@ public class JwtService {
         try {
             Jwts.parser()
                     .verifyWith(secretKey)
-                    .build().parseSignedClaims(token);
+                    .build()
+                    .parseSignedClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
@@ -109,12 +105,10 @@ public class JwtService {
     }
 
     public boolean isAccessToken(String token) {
-        return "access".equals(
-                extractTokenType(token));
+        return "access".equals(extractTokenType(token));
     }
 
     public boolean isRefreshToken(String token) {
-        return "refresh".equals(
-                extractTokenType(token));
+        return "refresh".equals(extractTokenType(token));
     }
 }

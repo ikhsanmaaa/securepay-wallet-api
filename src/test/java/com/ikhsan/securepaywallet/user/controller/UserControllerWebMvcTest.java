@@ -156,62 +156,6 @@ class UserControllerWebMvcTest {
         verify(sessionService).updateActivity(sessionId);
     }
 
-    // ── GET /api/users/admin-test ────────────────────────────────────────────
-
-    @Test
-    void adminEndpoint_shouldReturnForbidden_whenUserIsNotAdmin() throws Exception {
-
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-
-        String token = jwtService.generateAccessToken(userId, "USER", sessionId);
-
-        when(sessionService.isSessionValid(sessionId)).thenReturn(true);
-
-        // Act & Assert
-        mockMvc.perform(get("/api/users/admin-test")
-                .header("Authorization", "Bearer " + token))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void adminEndpoint_shouldReturnOk_whenUserIsAdmin() throws Exception {
-
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-
-        String token = jwtService.generateAccessToken(userId, "ADMIN", sessionId);
-
-        when(sessionService.isSessionValid(sessionId)).thenReturn(true);
-
-        // Act & Assert
-        mockMvc.perform(get("/api/users/admin-test")
-                .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void adminEndpoint_shouldNotUpdateSessionActivity_whenNotAnnotated() throws Exception {
-
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-
-        String token = jwtService.generateAccessToken(userId, "ADMIN", sessionId);
-
-        when(sessionService.isSessionValid(sessionId)).thenReturn(true);
-
-        // Act
-        mockMvc.perform(get("/api/users/admin-test")
-                .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk());
-
-        // Assert: @SessionActivity tidak ada di endpoint ini
-        verify(sessionService, never()).updateActivity(sessionId);
-    }
-
     // ── PUT /api/users/me ────────────────────────────────────────────────────
 
     @Test

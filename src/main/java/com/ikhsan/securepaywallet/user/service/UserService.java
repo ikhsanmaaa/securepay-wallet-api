@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.ikhsan.securepaywallet.common.service.ValidateService;
 import com.ikhsan.securepaywallet.user.dto.req.EditRequestDto;
 import com.ikhsan.securepaywallet.user.dto.res.UserResponse;
 import com.ikhsan.securepaywallet.user.entity.UserEntity;
@@ -20,7 +19,7 @@ public class UserService implements IUser {
 
     private final UserRepository userRepository;
 
-    public UserService(ValidateService validateService, UserRepository userRepository) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
