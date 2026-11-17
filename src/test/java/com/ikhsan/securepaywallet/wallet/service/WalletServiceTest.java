@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ikhsan.securepaywallet.enumerate.WalletStatus;
+import com.ikhsan.securepaywallet.ledger.service.ILedger;
 import com.ikhsan.securepaywallet.user.entity.UserEntity;
 import com.ikhsan.securepaywallet.wallet.dto.res.WalletResponse;
 import com.ikhsan.securepaywallet.wallet.entity.WalletEntity;
@@ -33,6 +34,9 @@ class WalletServiceTest {
     @Mock
     private WalletRepository walletRepository;
 
+    @Mock
+    private ILedger ledger;
+
     @InjectMocks
     private WalletService walletService;
 
@@ -43,7 +47,7 @@ class WalletServiceTest {
         user.setId(userId);
 
         when(walletRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(walletRepository.save(any(WalletEntity.class))).thenAnswer(invocation -> {
+        when(walletRepository.saveAndFlush(any(WalletEntity.class))).thenAnswer(invocation -> {
             WalletEntity entity = invocation.getArgument(0);
             entity.setId(UUID.randomUUID());
             return entity;
@@ -55,7 +59,7 @@ class WalletServiceTest {
         assertEquals(user, result.getUser());
         assertEquals(BigDecimal.ZERO, result.getBalance());
         assertEquals(WalletStatus.ACTIVE, result.getStatus());
-        verify(walletRepository).save(any(WalletEntity.class));
+        verify(walletRepository).saveAndFlush(any(WalletEntity.class));
     }
 
     @Test
@@ -75,7 +79,7 @@ class WalletServiceTest {
         WalletEntity result = walletService.createWallet(user);
 
         assertEquals(existing, result);
-        verify(walletRepository, never()).save(any());
+        verify(walletRepository, never()).saveAndFlush(any());
     }
 
     @Test

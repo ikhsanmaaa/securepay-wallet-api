@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.ikhsan.securepaywallet.auth.session.entity.SessionEntity;
 import com.ikhsan.securepaywallet.auth.session.entity.SessionRepository;
@@ -363,7 +364,7 @@ class SessionServiceTest {
 
                 // Act & Assert
                 assertThrows(
-                                IllegalArgumentException.class,
+                                ResponseStatusException.class,
                                 () -> sessionService.revokeSession(sessionId));
 
                 verify(sessionRepository, never())
@@ -454,7 +455,7 @@ class SessionServiceTest {
 
                 // Act & Assert
                 assertThrows(
-                                IllegalArgumentException.class,
+                                ResponseStatusException.class,
                                 () -> sessionService.updateActivity(sessionId));
 
                 verify(sessionRepository, never())

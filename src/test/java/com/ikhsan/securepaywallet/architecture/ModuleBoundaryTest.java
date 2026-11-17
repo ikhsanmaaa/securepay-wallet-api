@@ -13,6 +13,8 @@ import com.ikhsan.securepaywallet.auth.session.interceptor.SessionActivityInterc
 import com.ikhsan.securepaywallet.auth.session.service.SessionService;
 import com.ikhsan.securepaywallet.common.config.SecurityConfig;
 import com.ikhsan.securepaywallet.common.config.WebMvcConfig;
+import com.ikhsan.securepaywallet.ledger.service.LedgerService;
+import com.ikhsan.securepaywallet.transaction.service.TransactionService;
 import com.ikhsan.securepaywallet.user.controller.UserController;
 import com.ikhsan.securepaywallet.user.entity.UserEntity;
 import com.ikhsan.securepaywallet.user.service.UserService;
@@ -69,6 +71,20 @@ public class ModuleBoundaryTest {
                     .should().dependOnClassesThat().haveFullyQualifiedName(SessionService.class.getName())
                     .because("Modul lain tidak boleh bergantung pada kelas konkret SessionService; gunakan interface ISession.");
 
+    @ArchTest
+    public static final ArchRule ledgerServiceImplementation_shouldNotBeAccessedByOtherModules =
+            noClasses()
+                    .that().resideOutsideOfPackage("..ledger..")
+                    .should().dependOnClassesThat().haveFullyQualifiedName(LedgerService.class.getName())
+                    .because("Modul lain tidak boleh bergantung pada kelas konkret LedgerService; gunakan interface ILedger.");
+
+    @ArchTest
+    public static final ArchRule transactionServiceImplementation_shouldNotBeAccessedByOtherModules =
+            noClasses()
+                    .that().resideOutsideOfPackage("..transaction..")
+                    .should().dependOnClassesThat().haveFullyQualifiedName(TransactionService.class.getName())
+                    .because("Modul lain tidak boleh bergantung pada kelas konkret TransactionService; gunakan interface ITransaction.");
+
     // ── 3. Repo hanya diakses internal modul masing-masing ───────────────────
 
     @ArchTest
@@ -93,11 +109,11 @@ public class ModuleBoundaryTest {
                     .because("TransactionRepository hanya boleh diakses di dalam modul transaction.");
 
     @ArchTest
-    public static final ArchRule mutationRepository_shouldOnlyBeAccessedWithinMutationsModule =
+    public static final ArchRule ledgerRepository_shouldOnlyBeAccessedWithinLedgerModule =
             classes()
-                    .that().haveSimpleName("MutationRepository")
-                    .should().onlyBeAccessed().byAnyPackage("..mutations..")
-                    .because("MutationRepository hanya boleh diakses di dalam modul mutations.");
+                    .that().resideInAPackage("..ledger.repo..")
+                    .should().onlyBeAccessed().byAnyPackage("..ledger..")
+                    .because("Repository ledger hanya boleh diakses di dalam modul ledger.");
 
     @ArchTest
     public static final ArchRule userRepository_shouldOnlyBeAccessedByUserModuleAndAuth =
@@ -119,8 +135,7 @@ public class ModuleBoundaryTest {
                             "..wallet..",
                             // Pengecualian JPA terdokumentasi: relasi JPA ke WalletEntity
                             "..user.entity..",
-                            "..transaction..",
-                            "..mutations..")
+                            "..transaction..")
                     .because("WalletEntity hanya diakses internal wallet, dengan pengecualian relasi JPA.");
 
     @ArchTest

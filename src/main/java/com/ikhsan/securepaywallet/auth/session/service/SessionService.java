@@ -5,8 +5,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.ikhsan.securepaywallet.auth.session.entity.SessionEntity;
 import com.ikhsan.securepaywallet.auth.session.entity.SessionRepository;
@@ -68,7 +70,7 @@ public class SessionService implements ISession {
     @Transactional
     public void revokeSession(UUID sessionId) {
         SessionEntity session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Session not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session not found"));
 
         if (session.getRevokedAt() != null) {
             return;
@@ -82,7 +84,7 @@ public class SessionService implements ISession {
     public void updateActivity(UUID sessionId) {
 
         SessionEntity session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Session not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session not found"));
 
         if (session.getRevokedAt() != null) {
             return;

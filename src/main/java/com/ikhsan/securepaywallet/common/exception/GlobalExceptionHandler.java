@@ -70,9 +70,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<WebResponse<Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(WebResponse.builder()
-                        .errors(ex.getMessage() != null ? ex.getMessage() : "Resource not found")
+                        .errors(ex.getMessage() != null ? ex.getMessage() : "Invalid request")
                         .build());
     }
 

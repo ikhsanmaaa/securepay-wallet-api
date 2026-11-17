@@ -32,8 +32,15 @@ build/
 ### VS Code ###
 .vscode/
 
+### macOS ###
+.DS_Store
+**/.DS_Store
+
 /architecture
 
 AGENTS.md
 .kiro
 /graphify-out
+graphify-out/
+.graphify/
+.graphify*

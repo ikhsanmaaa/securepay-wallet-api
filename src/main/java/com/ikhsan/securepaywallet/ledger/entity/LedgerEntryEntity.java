@@ -1,4 +1,4 @@
-package com.ikhsan.securepaywallet.mutations;
+package com.ikhsan.securepaywallet.ledger.entity;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -7,53 +7,53 @@ import java.util.UUID;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.ikhsan.securepaywallet.transaction.TransactionEntity;
-import com.ikhsan.securepaywallet.wallet.entity.WalletEntity;
+import com.ikhsan.securepaywallet.enumerate.EntryDirection;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
+@Table(name = "ledger_entry")
 @Getter
-@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "mutations")
-public class MutationsEntity {
+public class LedgerEntryEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "wallet_id", nullable = false)
-    private WalletEntity wallet;
+    @Column(name = "transaction_id", nullable = false)
+    private UUID transactionId;
 
-    @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false)
-    private TransactionEntity transaction;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "account_id", nullable = false)
+    private LedgerAccountEntity account;
 
-    @Column(name = "balance_before", nullable = false)
-    private BigDecimal balanceBefore;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private EntryDirection direction;
 
-    @Column(name = "balance_after", nullable = false)
-    private BigDecimal balanceAfter;
-
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
-
 }

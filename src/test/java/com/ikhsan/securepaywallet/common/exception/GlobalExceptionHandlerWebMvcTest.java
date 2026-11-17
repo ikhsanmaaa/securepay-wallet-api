@@ -67,11 +67,11 @@ class GlobalExceptionHandlerWebMvcTest {
     }
 
     @Test
-    void handleIllegalArgumentException_shouldReturnNotFound() throws Exception {
+    void handleIllegalArgumentException_shouldReturnBadRequest() throws Exception {
         mockMvc.perform(get("/test-errors/illegal-argument"))
-                .andExpect(status().isNotFound())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data").doesNotExist())
-                .andExpect(jsonPath("$.errors").value("session not found"));
+                .andExpect(jsonPath("$.errors").value("amount harus lebih besar dari 0"));
     }
 
     @Test
@@ -117,7 +117,7 @@ class GlobalExceptionHandlerWebMvcTest {
 
         @GetMapping("/test-errors/illegal-argument")
         public void throwIllegalArgument() {
-            throw new IllegalArgumentException("session not found");
+            throw new IllegalArgumentException("amount harus lebih besar dari 0");
         }
 
         @GetMapping("/test-errors/user-not-found")
