@@ -39,6 +39,22 @@ public class UserService implements IUser {
 
     }
 
+    @Transactional(readOnly = true)
+    public UserResponse getUserByUsername(String username) {
+
+        UserEntity user = userRepository.findFirstByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + username));
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber())
+                .role(user.getRole().name())
+                .build();
+
+    }
+
     @Transactional
     public UserResponse updateUser(UUID userId, EditRequestDto request) {
 

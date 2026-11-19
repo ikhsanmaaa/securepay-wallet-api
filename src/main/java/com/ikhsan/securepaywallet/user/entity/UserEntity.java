@@ -2,13 +2,11 @@ package com.ikhsan.securepaywallet.user.entity;
 
 import com.ikhsan.securepaywallet.common.baseclass.BaseEntity;
 import com.ikhsan.securepaywallet.enumerate.Role;
-import com.ikhsan.securepaywallet.wallet.entity.WalletEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -41,8 +39,5 @@ public class UserEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
-
-    @OneToOne(mappedBy = "user")
-    private WalletEntity wallet;
 
 }

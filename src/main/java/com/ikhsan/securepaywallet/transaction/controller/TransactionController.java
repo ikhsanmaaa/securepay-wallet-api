@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ikhsan.securepaywallet.auth.session.annotation.SessionActivity;
 import com.ikhsan.securepaywallet.common.dto.WebResponse;
 import com.ikhsan.securepaywallet.transaction.dto.req.TopupRequest;
+import com.ikhsan.securepaywallet.transaction.dto.req.TransferRequest;
 import com.ikhsan.securepaywallet.transaction.dto.res.TransactionResponse;
 import com.ikhsan.securepaywallet.transaction.service.TransactionService;
 
@@ -37,10 +38,23 @@ public class TransactionController {
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping(path = "/topup", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public WebResponse<TransactionResponse> topUp(Authentication authentication,
-                                                  @Valid @RequestBody TopupRequest request) {
+            @Valid @RequestBody TopupRequest request) {
 
         UUID userId = (UUID) authentication.getPrincipal();
         TransactionResponse result = transactionService.topUp(userId, request);
+
+        return WebResponse.<TransactionResponse>builder().data(result).build();
+    }
+
+    @SessionActivity
+    @Operation(summary = "Transfer", description = "Moves balance from the authenticated user wallet to another user wallet")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping(path = "/transfer", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse<TransactionResponse> transfer(Authentication authentication,
+            @Valid @RequestBody TransferRequest request) {
+
+        UUID userId = (UUID) authentication.getPrincipal();
+        TransactionResponse result = transactionService.transfer(userId, request);
 
         return WebResponse.<TransactionResponse>builder().data(result).build();
     }

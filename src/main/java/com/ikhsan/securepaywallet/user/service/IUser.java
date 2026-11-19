@@ -9,6 +9,7 @@ public interface IUser {
 
     UserResponse getUserById(UUID userId);
 
-    UserResponse updateUser(UUID userId, EditRequestDto request);
+    UserResponse getUserByUsername(String username);
 
+    UserResponse updateUser(UUID userId, EditRequestDto request);
 }

@@ -130,4 +130,59 @@ class TransactionControllerWebMvcTest {
                         .content("{\"amount\":100.001}"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void transfer_shouldReturnUnauthorized_whenNoToken() throws Exception {
+        mockMvc.perform(post("/api/transactions/transfer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"receiverUsername\":\"budi\",\"amount\":1000.00}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void transfer_shouldReturnCreated_whenRequestValid() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        UUID transactionId = UUID.randomUUID();
+
+        String token = jwtService.generateAccessToken(userId, "USER", sessionId);
+        when(sessionService.isSessionValid(sessionId)).thenReturn(true);
+
+        TransactionResponse response = TransactionResponse.builder()
+                .id(transactionId)
+                .referenceNumber("TRANSFER-" + transactionId)
+                .type("TRANSFER")
+                .status("SUCCESS")
+                .amount(new BigDecimal("1000.00"))
+                .fee(BigDecimal.ZERO)
+                .createdAt(Instant.now())
+                .build();
+
+        when(transactionService.transfer(eq(userId), any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/transactions/transfer")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"receiverUsername\":\"budi\",\"amount\":1000.00}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.type").value("TRANSFER"))
+                .andExpect(jsonPath("$.data.amount").value(1000.00));
+
+        verify(transactionService).transfer(eq(userId), any());
+    }
+
+    @Test
+    void transfer_shouldReturnBadRequest_whenReceiverUsernameBlank() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+
+        String token = jwtService.generateAccessToken(userId, "USER", sessionId);
+        when(sessionService.isSessionValid(sessionId)).thenReturn(true);
+
+        mockMvc.perform(post("/api/transactions/transfer")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"receiverUsername\":\"  \",\"amount\":1000.00}"))
+                .andExpect(status().isBadRequest());
+    }
 }

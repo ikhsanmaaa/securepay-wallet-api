@@ -20,6 +20,11 @@ public interface WalletRepository extends JpaRepository<WalletEntity, UUID> {
 
     boolean existsByUserId(UUID userId);
 
+    // Proyeksi id saja: tidak boleh memuat entity sebelum lock-nya diambil,
+    // karena entity yang sudah ada di persistence context tidak di-refresh oleh query lock.
+    @Query("SELECT w.id FROM WalletEntity w WHERE w.user.id = :userId")
+    Optional<UUID> findWalletIdByUserId(@Param("userId") UUID userId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT w FROM WalletEntity w WHERE w.id = :id")
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))

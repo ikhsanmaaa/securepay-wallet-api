@@ -49,8 +49,12 @@ class LedgerInvariantPropertyTest extends PostgresTestBase {
         }
         pool.add(systemAccount(LedgerAccountType.SYSTEM_CASH));
 
-        Map<UUID, BigDecimal> expectedBalance = new HashMap<>();
-        pool.forEach(account -> expectedBalance.put(account.getId(), BigDecimal.ZERO));
+        Map<UUID, BigDecimal> startBalance = new HashMap<>();
+        Map<UUID, BigDecimal> delta = new HashMap<>();
+        pool.forEach(account -> {
+            startBalance.put(account.getId(), currentLedgerBalance(account.getId()));
+            delta.put(account.getId(), BigDecimal.ZERO);
+        });
 
         for (int i = 0; i < OPERATIONS; i++) {
             LedgerAccountEntity debit = pool.get(random.nextInt(pool.size()));
@@ -65,16 +69,16 @@ class LedgerInvariantPropertyTest extends PostgresTestBase {
                     new EntryLine(debit.getId(), EntryDirection.DEBIT, amount),
                     new EntryLine(credit.getId(), EntryDirection.CREDIT, amount)));
 
-            expectedBalance.merge(debit.getId(), amount.negate(), BigDecimal::add);
-            expectedBalance.merge(credit.getId(), amount, BigDecimal::add);
+            delta.merge(debit.getId(), amount.negate(), BigDecimal::add);
+            delta.merge(credit.getId(), amount, BigDecimal::add);
         }
 
         assertEquals(entryCountBefore + (long) OPERATIONS * 2, ledgerEntryRepository.count());
 
-        expectedBalance.forEach((accountId, expected) -> {
-            BigDecimal actual = ledgerEntryRepository.sumBalanceByAccountId(accountId, EntryDirection.CREDIT);
-            assertEquals(0, (actual == null ? BigDecimal.ZERO : actual).compareTo(expected),
-                    "saldo akun tidak cocok dengan ledger: " + accountId);
+        pool.forEach(account -> {
+            BigDecimal expected = startBalance.get(account.getId()).add(delta.get(account.getId()));
+            assertEquals(0, currentLedgerBalance(account.getId()).compareTo(expected),
+                    "saldo akun tidak cocok dengan ledger: " + account.getId());
         });
 
         BigDecimal totalDebit = BigDecimal.ZERO;
@@ -93,9 +97,14 @@ class LedgerInvariantPropertyTest extends PostgresTestBase {
             if (wallet.getWalletId() == null) {
                 continue;
             }
-            assertEquals(0, ledger.balanceOf(wallet.getWalletId())
-                            .compareTo(expectedBalance.get(wallet.getId())),
+            BigDecimal expected = startBalance.get(wallet.getId()).add(delta.get(wallet.getId()));
+            assertEquals(0, ledger.balanceOf(wallet.getWalletId()).compareTo(expected),
                     "balanceOf tidak cocok dengan ledger: " + wallet.getWalletId());
         }
+    }
+
+    private BigDecimal currentLedgerBalance(UUID accountId) {
+        BigDecimal balance = ledgerEntryRepository.sumBalanceByAccountId(accountId, EntryDirection.CREDIT);
+        return balance == null ? BigDecimal.ZERO : balance;
     }
 }
